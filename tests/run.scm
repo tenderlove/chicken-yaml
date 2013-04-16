@@ -9,6 +9,10 @@
               (lambda (version tags seed) (append seed (list (list 'document-start version tags))))
               (lambda (implicit? seed) (append seed (list (list 'document-end implicit?))))
               (lambda (alias seed) (append seed (list (list 'alias alias))))
+              (lambda (value anchor tag plain quoted style seed)
+                (append seed (list
+                               (list 'scalar value anchor tag plain quoted style)
+                               )))
               '()))
 
 (define (find-event event-name events)
@@ -38,6 +42,9 @@
 
 (test-group "alias"
   (test "A" '(alias "A") (find-event 'alias (yaml-exp "---\n- &A foo\n- *A"))))
+
+(test-group "scalar"
+  (test "A" '(scalar "foo" #f #f #t #f 1) (find-event 'scalar (yaml-exp "--- foo"))))
 
 (test-end)
 (test-exit)
