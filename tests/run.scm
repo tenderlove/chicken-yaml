@@ -10,21 +10,26 @@
               (lambda (implicit? seed) (append seed (list (list 'document-end implicit?))))
               '()))
 
-(test-group "parsing"
-  (test "stream-start" 'stream-start (caar (yaml-exp "--- foo")))
-  (test "doc-start" (list 'document-start '(1 1) '())
+(test-group "stream"
+  (test "start" 'stream-start (caar (yaml-exp "--- foo"))))
+
+(test-group "document-start"
+  (test "version" (list 'document-start '(1 1) '())
                     (find (lambda (event) (eq? 'document-start (car event)))
                           (yaml-exp "%YAML 1.1\n--- foo")))
-  (test "doc-start no version" (list 'document-start '() '())
+  (test "no version" (list 'document-start '() '())
                     (find (lambda (event) (eq? 'document-start (car event)))
                           (yaml-exp "--- foo")))
-  (test "doc-start tags" (list 'document-start '() (list (cons "!" "tag:tenderlovemaking.com,2009:")))
+  (test "tags" (list 'document-start '() (list (cons "!" "tag:tenderlovemaking.com,2009:")))
                     (find (lambda (event) (eq? 'document-start (car event)))
                           (yaml-exp "%TAG ! tag:tenderlovemaking.com,2009:\n--- foo")))
-  (test "doc-end implicit" '(document-end #t)
+)
+
+(test-group "document-end"
+  (test "implicit" '(document-end #t)
                   (find (lambda (event) (eq? 'document-end (car event)))
                         (yaml-exp "--- foo")))
-  (test "doc-end explicit" '(document-end #f)
+  (test "explicit" '(document-end #f)
                   (find (lambda (event) (eq? 'document-end (car event)))
                         (yaml-exp "--- foo\n...")))
 )
