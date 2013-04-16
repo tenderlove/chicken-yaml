@@ -22,21 +22,24 @@
 
 (define (yaml-parse yaml
                     stream-start
-                    document-start
                     stream-end
+                    document-start
+                    document-end
                     seed)
   (parse_yaml yaml
               stream-start
-              document-start
               stream-end
+              document-start
+              document-end
               seed
               add-tag))
 
 (define parse_yaml (foreign-safe-lambda* void
                                          ((nonnull-unsigned-c-string yaml)
                                           (scheme-object stream_start)
-                                          (scheme-object document_start)
                                           (scheme-object stream_end)
+                                          (scheme-object document_start)
+                                          (scheme-object document_end)
                                           (scheme-object seed)
                                           (scheme-object add_tag))
     "yaml_parser_t * parser;
@@ -108,6 +111,20 @@
             C_save(tags);
             C_save(seed);
             seed = C_callback(document_start, 3);
+          }
+          break;
+        case YAML_DOCUMENT_END_EVENT: {
+            C_word implicit_p;
+
+            if (event.data.document_end.implicit) {
+              implicit_p = C_SCHEME_TRUE;
+            } else {
+              implicit_p = C_SCHEME_FALSE;
+            }
+
+            C_save(implicit_p);
+            C_save(seed);
+            seed = C_callback(document_end, 2);
           }
           break;
         case YAML_STREAM_END_EVENT:
