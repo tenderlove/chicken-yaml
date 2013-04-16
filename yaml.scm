@@ -25,12 +25,14 @@
                     stream-end
                     document-start
                     document-end
+                    alias
                     seed)
   (parse_yaml yaml
               stream-start
               stream-end
               document-start
               document-end
+              alias
               seed
               add-tag))
 
@@ -40,6 +42,7 @@
                                           (scheme-object stream_end)
                                           (scheme-object document_start)
                                           (scheme-object document_end)
+                                          (scheme-object alias)
                                           (scheme-object seed)
                                           (scheme-object add_tag))
     "yaml_parser_t * parser;
@@ -125,6 +128,20 @@
             C_save(implicit_p);
             C_save(seed);
             seed = C_callback(document_end, 2);
+          }
+          break;
+        case YAML_ALIAS_EVENT: {
+            C_word alias_str = C_SCHEME_FALSE;
+            C_word *a;
+
+            if (event.data.alias.anchor) {
+              a = C_alloc(C_SIZEOF_STRING(strlen(event.data.alias.anchor)));
+              alias_str = C_string2(&a, event.data.alias.anchor);
+            }
+
+            C_save(alias_str);
+            C_save(seed);
+            seed = C_callback(alias, 2);
           }
           break;
         case YAML_STREAM_END_EVENT:

@@ -8,6 +8,7 @@
               (lambda (seed) (append seed (list (list 'stream-end))))
               (lambda (version tags seed) (append seed (list (list 'document-start version tags))))
               (lambda (implicit? seed) (append seed (list (list 'document-end implicit?))))
+              (lambda (alias seed) (append seed (list (list 'alias alias))))
               '()))
 
 (test-group "stream"
@@ -33,6 +34,11 @@
                   (find (lambda (event) (eq? 'document-end (car event)))
                         (yaml-exp "--- foo\n...")))
 )
+
+(test-group "alias"
+  (test "A" '(alias "A")
+            (find (lambda (event) (eq? 'alias (car event)))
+                  (yaml-exp "---\n- &A foo\n- *A"))))
 
 (test-end)
 (test-exit)
