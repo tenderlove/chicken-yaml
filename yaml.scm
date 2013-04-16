@@ -2,7 +2,7 @@
 ;;;; Bindings to libyaml
 
 (module yaml
-  (make-yaml-parser)
+  (yaml-parse)
 
 (import scheme chicken foreign)
 
@@ -10,5 +10,125 @@
 #include <yaml.h>
 <#
 
-(define make-yaml-parser 42)
+(define-record-type yaml-parser
+  (yaml-wrap-parser parser stream-start)
+  yaml-parser?
+  (parser yaml-unwrap-parser)
+  (stream-start yaml-stream-start))
+
+(define-foreign-type yaml_parser (c-pointer "yaml_parser_t"))
+
+(define (add-tag pair tags) (append tags (list pair)))
+
+(define (yaml-parse yaml
+                    stream-start
+                    document-start
+                    stream-end
+                    seed)
+  (parse_yaml yaml
+              stream-start
+              document-start
+              stream-end
+              seed
+              add-tag))
+
+(define parse_yaml (foreign-safe-lambda* void
+                                         ((nonnull-unsigned-c-string yaml)
+                                          (scheme-object stream_start)
+                                          (scheme-object document_start)
+                                          (scheme-object stream_end)
+                                          (scheme-object seed)
+                                          (scheme-object add_tag))
+    "yaml_parser_t * parser;
+    int done = 0;
+    int state = 0;
+    yaml_event_t event;
+    parser = malloc(sizeof(yaml_parser_t));
+    yaml_parser_initialize(parser);
+    yaml_parser_set_input_string(
+      parser,
+      (const unsigned char *)(yaml),
+      (size_t)strlen(yaml)
+    );
+    while(!done) {
+      if(!yaml_parser_parse(parser, &event)) {
+        // FIXME
+      }
+      switch(event.type) {
+        case YAML_STREAM_START_EVENT: {
+            C_save(C_fix(event.data.stream_start.encoding));
+            C_save(seed);
+            seed = C_callback(stream_start, 2);
+          }
+          break;
+        case YAML_DOCUMENT_START_EVENT: {
+            C_word tags;
+            C_word version;
+
+            tags = C_list(NULL, 0);
+
+            if (event.data.document_start.version_directive) {
+              C_word * versionlist = C_alloc(C_SIZEOF_LIST(2));
+              version = C_list(&versionlist, 2,
+                                C_fix(event.data.document_start.version_directive->major),
+                                C_fix(event.data.document_start.version_directive->minor));
+            } else {
+              version = C_list(NULL, 0);
+            }
+
+            if (event.data.document_start.tag_directives.start) {
+              yaml_tag_directive_t *start =
+                event.data.document_start.tag_directives.start;
+              yaml_tag_directive_t *end =
+                event.data.document_start.tag_directives.end;
+
+              for(; start != end; start++) {
+                C_word handle = C_SCHEME_FALSE;
+                C_word prefix = C_SCHEME_FALSE;
+                C_word *p  = C_alloc(C_SIZEOF_PAIR);
+                C_word pair;
+                if (start->handle) {
+                  C_word *a = C_alloc(C_SIZEOF_STRING(strlen(start->handle)));
+                  handle = C_string2(&a, start->handle);
+                }
+
+                if (start->prefix) {
+                  C_word *a = C_alloc(C_SIZEOF_STRING(strlen(start->prefix)));
+                  prefix = C_string2(&a, start->prefix);
+                }
+
+                pair = C_pair(&p, handle, prefix);
+                C_save(pair);
+                C_save(tags);
+                tags = C_callback(add_tag, 2);
+              }
+            }
+
+            C_save(version);
+            C_save(tags);
+            C_save(seed);
+            seed = C_callback(document_start, 3);
+          }
+          break;
+        case YAML_STREAM_END_EVENT:
+          C_save(seed);
+          seed = C_callback(stream_end, 1);
+          done = 1;
+          break;
+      }
+      yaml_event_delete(&event);
+    }
+    C_return(seed);
+    "
+))
+
+(define alloc-yaml-parser (foreign-lambda* yaml_parser ()
+    "yaml_parser_t * parser;\n"
+    "parser = malloc(sizeof(yaml_parser_t));\n"
+    "yaml_parser_initialize(parser);\n"
+    "C_return(parser);\n"))
+
+(define free-yaml-parser (foreign-lambda* void ((yaml_parser parser))
+    "yaml_parser_delete(parser);\n"
+    "free(parser);\n"))
 )
