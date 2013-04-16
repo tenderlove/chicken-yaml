@@ -44,7 +44,11 @@
   (test "A" '(alias "A") (find-event 'alias (yaml-exp "---\n- &A foo\n- *A"))))
 
 (test-group "scalar"
-  (test "A" '(scalar "foo" #f #f #t #f 1) (find-event 'scalar (yaml-exp "--- foo"))))
+  (test "plain" '(scalar "foo" #f #f #t #f 1)
+                (find-event 'scalar (yaml-exp "--- foo")))
+  (test "quoted" '(scalar "foo" #f #f #f #t 2)
+                (find-event 'scalar (yaml-exp "--- 'foo'")))
+)
 
 (test-end)
 (test-exit)
