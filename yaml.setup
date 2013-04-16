@@ -1,0 +1,12 @@
+(use srfi-1)
+(use srfi-13)
+(let ((cflags (with-input-from-pipe "pkg-config --cflags yaml-0.1" read-line))
+      (lflags (with-input-from-pipe "pkg-config --libs yaml-0.1" read-line)))
+
+(compile -O2 -d0 -s -j yaml "yaml.scm" ,cflags ,lflags)
+(compile -O2 -d0 -s yaml.import.scm))
+
+(install-extension
+  'yaml
+  '("yaml.so" "yaml.import.so")
+  '((version "1.0.0")))

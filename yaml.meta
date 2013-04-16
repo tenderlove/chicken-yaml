@@ -1,0 +1,10 @@
+;;; yaml.meta -*- Hen -*-
+
+((egg "yaml.egg")
+ (synopsis "Bindings to libyaml")
+ (author "Aaron Patterson")
+ (license "MIT")
+ (category net)
+ (doc-from-wiki)
+ (test-depends test)
+ (files "yaml.scm" "yaml.meta" "yaml.setup" "tests/run.scm"))
