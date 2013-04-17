@@ -85,7 +85,7 @@
     yaml_parser_set_input_string(
       parser,
       (const unsigned char *)(yaml),
-      (size_t)strlen(yaml)
+      (size_t)strlen((const char *)yaml)
     );
     while(!done) {
       if(!yaml_parser_parse(parser, &event)) {
@@ -125,13 +125,13 @@
                 C_word *p  = C_alloc(C_SIZEOF_PAIR);
                 C_word pair;
                 if (start->handle) {
-                  C_word *a = C_alloc(C_SIZEOF_STRING(strlen(start->handle)));
-                  handle = C_string2(&a, start->handle);
+                  C_word *a = C_alloc(C_SIZEOF_STRING(strlen((const char *)start->handle)));
+                  handle = C_string2(&a, (char *)start->handle);
                 }
 
                 if (start->prefix) {
-                  C_word *a = C_alloc(C_SIZEOF_STRING(strlen(start->prefix)));
-                  prefix = C_string2(&a, start->prefix);
+                  C_word *a = C_alloc(C_SIZEOF_STRING(strlen((const char *)start->prefix)));
+                  prefix = C_string2(&a, (char *)start->prefix);
                 }
 
                 pair = C_pair(&p, handle, prefix);
@@ -166,8 +166,8 @@
             C_word *a;
 
             if (event.data.alias.anchor) {
-              a = C_alloc(C_SIZEOF_STRING(strlen(event.data.alias.anchor)));
-              alias_str = C_string2(&a, event.data.alias.anchor);
+              a = C_alloc(C_SIZEOF_STRING(strlen((const char *)event.data.alias.anchor)));
+              alias_str = C_string2(&a, (char *)event.data.alias.anchor);
             }
 
             C_save(alias_str);
@@ -182,16 +182,16 @@
             C_word val;
             C_word *a;
             a = C_alloc(C_SIZEOF_STRING(event.data.scalar.length));
-            val = C_string(&a, event.data.scalar.length, event.data.scalar.value);
+            val = C_string(&a, event.data.scalar.length, (char *)event.data.scalar.value);
 
             if (event.data.scalar.anchor) {
-              C_word *a = C_alloc(C_SIZEOF_STRING(strlen(event.data.scalar.anchor)));
-              anchor = C_string2(&a, event.data.scalar.anchor);
+              C_word *a = C_alloc(C_SIZEOF_STRING(strlen((const char *)event.data.scalar.anchor)));
+              anchor = C_string2(&a, (char *)event.data.scalar.anchor);
             }
 
             if (event.data.scalar.tag) {
-              C_word *a = C_alloc(C_SIZEOF_STRING(strlen(event.data.scalar.tag)));
-              tag = C_string2(&a, event.data.scalar.tag);
+              C_word *a = C_alloc(C_SIZEOF_STRING(strlen((const char *)event.data.scalar.tag)));
+              tag = C_string2(&a, (char *)event.data.scalar.tag);
             }
 
             plain_implicit =
@@ -218,13 +218,13 @@
             C_word implicit, style;
 
             if (event.data.sequence_start.anchor) {
-              C_word *a = C_alloc(C_SIZEOF_STRING(strlen(event.data.sequence_start.anchor)));
-              anchor = C_string2(&a, event.data.sequence_start.anchor);
+              C_word *a = C_alloc(C_SIZEOF_STRING(strlen((const char *)event.data.sequence_start.anchor)));
+              anchor = C_string2(&a, (char *)event.data.sequence_start.anchor);
             }
 
             if (event.data.sequence_start.tag) {
-              C_word *a = C_alloc(C_SIZEOF_STRING(strlen(event.data.sequence_start.tag)));
-              anchor = C_string2(&a, event.data.sequence_start.tag);
+              C_word *a = C_alloc(C_SIZEOF_STRING(strlen((const char *)event.data.sequence_start.tag)));
+              anchor = C_string2(&a, (char *)event.data.sequence_start.tag);
             }
 
             implicit = event.data.sequence_start.implicit == 0 ?
@@ -251,13 +251,13 @@
             C_word implicit, style;
 
             if (event.data.mapping_start.anchor) {
-              C_word *a = C_alloc(C_SIZEOF_STRING(strlen(event.data.mapping_start.anchor)));
-              anchor = C_string2(&a, event.data.mapping_start.anchor);
+              C_word *a = C_alloc(C_SIZEOF_STRING(strlen((const char *)event.data.mapping_start.anchor)));
+              anchor = C_string2(&a, (char *)event.data.mapping_start.anchor);
             }
 
             if (event.data.mapping_start.tag) {
-              C_word *a = C_alloc(C_SIZEOF_STRING(strlen(event.data.mapping_start.tag)));
-              anchor = C_string2(&a, event.data.mapping_start.tag);
+              C_word *a = C_alloc(C_SIZEOF_STRING(strlen((const char *)event.data.mapping_start.tag)));
+              anchor = C_string2(&a, (char *)event.data.mapping_start.tag);
             }
 
             implicit = event.data.mapping_start.implicit == 0 ?
