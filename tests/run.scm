@@ -102,9 +102,12 @@
 
 (test-group "load"
   (test-group "string"
-    (test (list "foo") (yaml-load "--- foo")))
+    (test "foo" (yaml-load "--- foo")))
   (test-group "list"
-    (test (list (list "foo" "bar")) (yaml-load "--- ['foo', 'bar']"))))
+    (test (list "foo" "bar") (yaml-load "--- ['foo', 'bar']"))
+    (test (list "foo" (list "bar")) (yaml-load "--- ['foo', ['bar']]"))
+  )
+)
 
 (test-end)
 (test-exit)

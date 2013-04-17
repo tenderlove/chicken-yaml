@@ -15,7 +15,7 @@
 (define (sequence-end seed)
   (let loop ((the-list '()) (stack seed))
     (if (eq? 'sequence-start (car stack))
-      (cons the-list stack)
+      (cons the-list (cdr stack))
       (loop (cons (car stack) the-list) (cdr stack)))))
 
 (define (yaml-load yaml)
@@ -23,7 +23,7 @@
               (lambda (enc seed) (cons 'stream-start seed))
               (lambda (seed) seed)
               (lambda (version tags seed) (cons (list 'document-start version tags) seed))
-              (lambda (implicit? seed) (list (car seed)))
+              (lambda (implicit? seed) (car seed))
               (lambda (alias seed) seed)
               (lambda (value anchor tag plain quoted style seed) (cons value seed))
               (lambda (anchor tag implicit style seed) (cons 'sequence-start seed))
