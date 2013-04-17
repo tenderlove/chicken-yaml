@@ -63,6 +63,12 @@
 (test-group "sequence"
   (test "start" '(sequence-start #f #f #t 1)
                 (find-event 'sequence-start (yaml-exp "---\n- foo")))
+  (test "tag" '(sequence-start "tag:yaml.org,2002:seq" #f #f 2)
+                (find-event 'sequence-start (yaml-exp "!!seq [ 'foo' ]")))
+  (test "anchor" '(sequence-start "1" #f #t 1)
+                (find-event 'sequence-start (yaml-exp "--- &1\n- 1\n")))
+  (test "style" '(sequence-start #f #f #t 2)
+                (find-event 'sequence-start (yaml-exp "[ 'foo' ]")))
 )
 
 (test-end)
