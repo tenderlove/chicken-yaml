@@ -10,12 +10,6 @@
 #include <yaml.h>
 <#
 
-(define-record-type yaml-parser
-  (yaml-wrap-parser parser stream-start)
-  yaml-parser?
-  (parser yaml-unwrap-parser)
-  (stream-start yaml-stream-start))
-
 (define-foreign-type yaml_parser (c-pointer "yaml_parser_t"))
 
 (define (add-tag pair tags) (append tags (list pair)))
