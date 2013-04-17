@@ -48,6 +48,8 @@
                 (find-event 'scalar (yaml-exp "--- foo")))
   (test "quoted" '(scalar "foo" #f #f #f #t 2)
                 (find-event 'scalar (yaml-exp "--- 'foo'")))
+  (test "tag" '(scalar "foo" #f "!str" #f #f 1)
+                (find-event 'scalar (yaml-exp "--- !str foo")))
 )
 
 (test-end)
