@@ -26,6 +26,7 @@
                                          tag
                                          implicit
                                          style))))
+              (lambda (seed) (append seed (list (list 'mapping-end))))
               '()))
 
 (define (find-event event-name events)
@@ -92,6 +93,11 @@
                 (find-event 'mapping-start (yaml-exp "--- &A { foo: bar }")))
   (test "style" '(mapping-start #f #f #t 2)
                 (find-event 'mapping-start (yaml-exp "{ foo: bar }")))
+)
+
+(test-group "mapping-end"
+  (test "end" '(mapping-end)
+                (find-event 'mapping-end (yaml-exp "{ foo: bar }")))
 )
 
 (test-end)

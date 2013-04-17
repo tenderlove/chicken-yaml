@@ -30,6 +30,7 @@
                     sequence-start
                     sequence-end
                     mapping-start
+                    mapping-end
                     seed)
   (parse_yaml yaml
               stream-start
@@ -41,6 +42,7 @@
               sequence-start
               sequence-end
               mapping-start
+              mapping-end
               seed
               add-tag))
 
@@ -55,6 +57,7 @@
                                           (scheme-object sequence_start)
                                           (scheme-object sequence_end)
                                           (scheme-object mapping_start)
+                                          (scheme-object mapping_end)
                                           (scheme-object seed)
                                           (scheme-object add_tag))
     "yaml_parser_t * parser;
@@ -252,6 +255,11 @@
             C_save(style);
             C_save(seed);
             seed = C_callback(mapping_start, 5);
+          }
+          break;
+        case YAML_MAPPING_END_EVENT: {
+            C_save(seed);
+            seed = C_callback(mapping_end, 1);
           }
           break;
         case YAML_STREAM_END_EVENT:
