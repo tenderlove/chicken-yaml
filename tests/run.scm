@@ -20,6 +20,12 @@
                                          implicit
                                          style))))
               (lambda (seed) (append seed (list (list 'sequence-end))))
+              (lambda (anchor tag implicit style seed)
+                (append seed (list (list 'mapping-start
+                                         anchor
+                                         tag
+                                         implicit
+                                         style))))
               '()))
 
 (define (find-event event-name events)
@@ -75,6 +81,17 @@
 (test-group "sequence-end"
   (test "end" '(sequence-end)
                 (find-event 'sequence-end (yaml-exp "[ 'foo' ]")))
+)
+
+(test-group "mapping-start"
+  (test "start" '(mapping-start #f #f #t 1)
+                (find-event 'mapping-start (yaml-exp "---\nfoo: bar")))
+  (test "tag" '(mapping-start "tag:yaml.org,2002:map" #f #f 2)
+                (find-event 'mapping-start (yaml-exp "!!map { foo: bar }")))
+  (test "anchor" '(mapping-start "A" #f #t 2)
+                (find-event 'mapping-start (yaml-exp "--- &A { foo: bar }")))
+  (test "style" '(mapping-start #f #f #t 2)
+                (find-event 'mapping-start (yaml-exp "{ foo: bar }")))
 )
 
 (test-end)

@@ -29,6 +29,7 @@
                     scalar
                     sequence-start
                     sequence-end
+                    mapping-start
                     seed)
   (parse_yaml yaml
               stream-start
@@ -39,6 +40,7 @@
               scalar
               sequence-start
               sequence-end
+              mapping-start
               seed
               add-tag))
 
@@ -52,6 +54,7 @@
                                           (scheme-object scalar)
                                           (scheme-object sequence_start)
                                           (scheme-object sequence_end)
+                                          (scheme-object mapping_start)
                                           (scheme-object seed)
                                           (scheme-object add_tag))
     "yaml_parser_t * parser;
@@ -221,6 +224,34 @@
         case YAML_SEQUENCE_END_EVENT: {
             C_save(seed);
             seed = C_callback(sequence_end, 1);
+          }
+          break;
+        case YAML_MAPPING_START_EVENT: {
+            C_word anchor = C_SCHEME_FALSE;
+            C_word tag = C_SCHEME_FALSE;
+            C_word implicit, style;
+
+            if (event.data.mapping_start.anchor) {
+              C_word *a = C_alloc(C_SIZEOF_STRING(strlen(event.data.mapping_start.anchor)));
+              anchor = C_string2(&a, event.data.mapping_start.anchor);
+            }
+
+            if (event.data.mapping_start.tag) {
+              C_word *a = C_alloc(C_SIZEOF_STRING(strlen(event.data.mapping_start.tag)));
+              anchor = C_string2(&a, event.data.mapping_start.tag);
+            }
+
+            implicit = event.data.mapping_start.implicit == 0 ?
+              C_SCHEME_FALSE : C_SCHEME_TRUE;
+
+            style = C_fix(event.data.mapping_start.style);
+
+            C_save(anchor);
+            C_save(tag);
+            C_save(implicit);
+            C_save(style);
+            C_save(seed);
+            seed = C_callback(mapping_start, 5);
           }
           break;
         case YAML_STREAM_END_EVENT:
