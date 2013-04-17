@@ -267,6 +267,8 @@
           seed = C_callback(stream_end, 1);
           done = 1;
           break;
+        case YAML_NO_EVENT:
+          break;
       }
       yaml_event_delete(&event);
     }
