@@ -18,18 +18,28 @@
       (cons the-list (cdr stack))
       (loop (cons (car stack) the-list) (cdr stack)))))
 
+(define (mapping-end seed)
+  (let loop ((the-list '()) (stack seed))
+    (if (eq? 'mapping-start (car stack))
+        (cons the-list (cdr stack))
+        (loop (cons (cons (cadr stack) (car stack)) the-list) (cddr stack)))))
+
 (define (yaml-load yaml)
   (yaml-parse yaml
               (lambda (enc seed) (cons 'stream-start seed))
               (lambda (seed) seed)
-              (lambda (version tags seed) (cons (list 'document-start version tags) seed))
+              (lambda (version tags seed)
+                      (cons 'document-start seed))
               (lambda (implicit? seed) (car seed))
               (lambda (alias seed) seed)
-              (lambda (value anchor tag plain quoted style seed) (cons value seed))
-              (lambda (anchor tag implicit style seed) (cons 'sequence-start seed))
+              (lambda (value anchor tag plain quoted style seed)
+                      (cons value seed))
+              (lambda (anchor tag implicit style seed)
+                      (cons 'sequence-start seed))
               sequence-end
-              (lambda (anchor tag implicit style seed) (cons 'mapping-start seed))
-              (lambda (seed) (cdr seed) )
+              (lambda (anchor tag implicit style seed)
+                      (cons 'mapping-start seed))
+              mapping-end
               '()))
 
 (define-foreign-type yaml_parser (c-pointer "yaml_parser_t"))

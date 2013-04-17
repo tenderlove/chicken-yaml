@@ -106,6 +106,11 @@
     (test (list "foo" "bar") (yaml-load "--- ['foo', 'bar']"))
     (test (list "foo" (list "bar")) (yaml-load "--- ['foo', ['bar']]"))
   )
+  (test-group "hash"
+    (test (list (cons "foo" "bar")) (yaml-load "--- {'foo':'bar'}"))
+    (test (list (list "foo" (cons "bar" "baz")))
+          (yaml-load "--- {'foo':{'bar':'baz'}}"))
+  )
 )
 
 (test-end)
