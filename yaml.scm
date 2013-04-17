@@ -2,13 +2,35 @@
 ;;;; Bindings to libyaml
 
 (module yaml
-  (yaml-parse)
+  (yaml-parse
+  (yaml-load))
 
 (import scheme chicken foreign)
 
 #>
 #include <yaml.h>
 <#
+
+
+(define (sequence-end seed)
+  (let loop ((the-list '()) (stack seed))
+    (if (eq? 'sequence-start (car stack))
+      (cons the-list stack)
+      (loop (cons (car stack) the-list) (cdr stack)))))
+
+(define (yaml-load yaml)
+  (yaml-parse yaml
+              (lambda (enc seed) (cons 'stream-start seed))
+              (lambda (seed) seed)
+              (lambda (version tags seed) (cons (list 'document-start version tags) seed))
+              (lambda (implicit? seed) (list (car seed)))
+              (lambda (alias seed) seed)
+              (lambda (value anchor tag plain quoted style seed) (cons value seed))
+              (lambda (anchor tag implicit style seed) (cons 'sequence-start seed))
+              sequence-end
+              (lambda (anchor tag implicit style seed) (cons 'mapping-start seed))
+              (lambda (seed) (cdr seed) )
+              '()))
 
 (define-foreign-type yaml_parser (c-pointer "yaml_parser_t"))
 
