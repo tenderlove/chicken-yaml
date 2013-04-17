@@ -28,6 +28,7 @@
                     alias
                     scalar
                     sequence-start
+                    sequence-end
                     seed)
   (parse_yaml yaml
               stream-start
@@ -37,6 +38,7 @@
               alias
               scalar
               sequence-start
+              sequence-end
               seed
               add-tag))
 
@@ -49,6 +51,7 @@
                                           (scheme-object alias)
                                           (scheme-object scalar)
                                           (scheme-object sequence_start)
+                                          (scheme-object sequence_end)
                                           (scheme-object seed)
                                           (scheme-object add_tag))
     "yaml_parser_t * parser;
@@ -213,6 +216,11 @@
             C_save(style);
             C_save(seed);
             seed = C_callback(sequence_start, 5);
+          }
+          break;
+        case YAML_SEQUENCE_END_EVENT: {
+            C_save(seed);
+            seed = C_callback(sequence_end, 1);
           }
           break;
         case YAML_STREAM_END_EVENT:

@@ -19,6 +19,7 @@
                                          tag
                                          implicit
                                          style))))
+              (lambda (seed) (append seed (list (list 'sequence-end))))
               '()))
 
 (define (find-event event-name events)
@@ -60,7 +61,7 @@
                 (find-event 'scalar (yaml-exp "--- &A foo")))
 )
 
-(test-group "sequence"
+(test-group "sequence-start"
   (test "start" '(sequence-start #f #f #t 1)
                 (find-event 'sequence-start (yaml-exp "---\n- foo")))
   (test "tag" '(sequence-start "tag:yaml.org,2002:seq" #f #f 2)
@@ -69,6 +70,11 @@
                 (find-event 'sequence-start (yaml-exp "--- &1\n- 1\n")))
   (test "style" '(sequence-start #f #f #t 2)
                 (find-event 'sequence-start (yaml-exp "[ 'foo' ]")))
+)
+
+(test-group "sequence-end"
+  (test "end" '(sequence-end)
+                (find-event 'sequence-end (yaml-exp "[ 'foo' ]")))
 )
 
 (test-end)
