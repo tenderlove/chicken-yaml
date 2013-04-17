@@ -50,6 +50,8 @@
                 (find-event 'scalar (yaml-exp "--- 'foo'")))
   (test "tag" '(scalar "foo" #f "!str" #f #f 1)
                 (find-event 'scalar (yaml-exp "--- !str foo")))
+  (test "alias" '(scalar "foo" "A" #f #t #f 1)
+                (find-event 'scalar (yaml-exp "--- &A foo")))
 )
 
 (test-end)

@@ -156,6 +156,11 @@
             a = C_alloc(C_SIZEOF_STRING(event.data.scalar.length));
             val = C_string(&a, event.data.scalar.length, event.data.scalar.value);
 
+            if (event.data.scalar.anchor) {
+              C_word *a = C_alloc(C_SIZEOF_STRING(strlen(event.data.scalar.anchor)));
+              anchor = C_string2(&a, event.data.scalar.anchor);
+            }
+
             if (event.data.scalar.tag) {
               C_word *a = C_alloc(C_SIZEOF_STRING(strlen(event.data.scalar.tag)));
               tag = C_string2(&a, event.data.scalar.tag);
