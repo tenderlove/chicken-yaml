@@ -1,5 +1,6 @@
 (use srfi-1)
 (use srfi-13)
+(use posix)
 (let ((cflags (with-input-from-pipe "pkg-config --cflags yaml-0.1" read-line))
       (lflags (with-input-from-pipe "pkg-config --libs yaml-0.1" read-line)))
 

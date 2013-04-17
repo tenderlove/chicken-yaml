@@ -4,29 +4,27 @@
 
 (define (yaml-exp yaml)
   (yaml-parse yaml
-              (lambda (enc seed) (append seed (list (list 'stream-start enc))))
-              (lambda (seed) (append seed (list (list 'stream-end))))
-              (lambda (version tags seed) (append seed (list (list 'document-start version tags))))
-              (lambda (implicit? seed) (append seed (list (list 'document-end implicit?))))
-              (lambda (alias seed) (append seed (list (list 'alias alias))))
+              (lambda (enc seed) (cons '(stream-start enc) seed))
+              (lambda (seed) (cons (list 'stream-end) seed))
+              (lambda (version tags seed) (cons (list 'document-start version tags) seed))
+              (lambda (implicit? seed) (cons (list 'document-end implicit?) seed))
+              (lambda (alias seed) (cons (list 'alias alias) seed))
               (lambda (value anchor tag plain quoted style seed)
-                (append seed (list
-                               (list 'scalar value anchor tag plain quoted style)
-                               )))
+                (cons (list 'scalar value anchor tag plain quoted style) seed))
               (lambda (anchor tag implicit style seed)
-                (append seed (list (list 'sequence-start
+                (cons (list 'sequence-start
                                          anchor
                                          tag
                                          implicit
-                                         style))))
-              (lambda (seed) (append seed (list (list 'sequence-end))))
+                                         style) seed))
+              (lambda (seed) (cons '(sequence-end) seed))
               (lambda (anchor tag implicit style seed)
-                (append seed (list (list 'mapping-start
+                (cons (list 'mapping-start
                                          anchor
                                          tag
                                          implicit
-                                         style))))
-              (lambda (seed) (append seed (list (list 'mapping-end))))
+                                         style) seed))
+              (lambda (seed) (cons '(mapping-end) seed))
               '()))
 
 (define (find-event event-name events)
