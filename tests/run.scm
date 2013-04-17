@@ -13,6 +13,12 @@
                 (append seed (list
                                (list 'scalar value anchor tag plain quoted style)
                                )))
+              (lambda (anchor tag implicit style seed)
+                (append seed (list (list 'sequence-start
+                                         anchor
+                                         tag
+                                         implicit
+                                         style))))
               '()))
 
 (define (find-event event-name events)
@@ -52,6 +58,11 @@
                 (find-event 'scalar (yaml-exp "--- !str foo")))
   (test "alias" '(scalar "foo" "A" #f #t #f 1)
                 (find-event 'scalar (yaml-exp "--- &A foo")))
+)
+
+(test-group "sequence"
+  (test "start" '(sequence-start #f #f #t 1)
+                (find-event 'sequence-start (yaml-exp "---\n- foo")))
 )
 
 (test-end)
