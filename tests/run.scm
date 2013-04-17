@@ -4,7 +4,7 @@
 
 (define (yaml-exp yaml)
   (yaml-parse yaml
-              (lambda (enc seed) (cons '(stream-start enc) seed))
+              (lambda (enc seed) (cons (list 'stream-start enc) seed))
               (lambda (seed) (cons (list 'stream-end) seed))
               (lambda (version tags seed) (cons (list 'document-start version tags) seed))
               (lambda (implicit? seed) (cons (list 'document-end implicit?) seed))
@@ -31,7 +31,8 @@
   (find (lambda (event) (eq? event-name (car event))) events))
 
 (test-group "stream"
-  (test "start" 'stream-start (caar (yaml-exp "--- foo"))))
+  (test "start" (list 'stream-start 1)
+                (find-event 'stream-start (yaml-exp "--- foo"))))
 
 (test-group "document-start"
   (test "version" (list 'document-start '(1 1) '())
