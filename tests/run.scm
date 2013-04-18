@@ -109,6 +109,8 @@
     (test 1.2 (yaml-load "--- 1.2"))
     (test 1000.0 (yaml-load "--- 1,000"))
     (test 1000.0 (yaml-load "--- 1_000"))
+    (test -inf (yaml-load "--- '-.inf'"))
+    (test +inf (yaml-load "--- '.inf'"))
   )
   (test-group "list"
     (test (list "foo" "bar") (yaml-load "--- ['foo', 'bar']"))

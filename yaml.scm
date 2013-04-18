@@ -29,8 +29,10 @@
 
 (define (parse-scalar value)
   (cond ((irregex-match "[-+]?[0-9]+" value) (string->number value))
-        ((irregex-match "[-+]?([0-9][0-9_,]*)?\.[0-9]*([eE][-+][0-9]+)?" value)
+        ((irregex-match "[-+]?([0-9][0-9_,]*)?\.[0-9]*([eE][-+][0-9]+)?|[+-]?" value)
          (string->number (irregex-replace/all "[,_]" value "")))
+        ((irregex-match "[-+]?.(?:inf|INF|Inf)" value)
+         (string->number (irregex-replace/all "[.]" value "")))
         (else value)))
 
 (define (yaml-load yaml)
