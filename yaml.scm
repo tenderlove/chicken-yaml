@@ -70,7 +70,17 @@
               mapping-start
               mapping-end
               seed
-              add-tag))
+              add-tag
+              make-exception
+              abort))
+
+(define (make-exception line column offset problem context)
+    (make-property-condition
+         'yaml-parse-error
+         'message (string-append "(<unknown>): "
+                    problem " " context " at line "
+                    (number->string line) " column "
+                    (number->string column))))
 
 (define parse_yaml (foreign-safe-lambda* void
                                          ((nonnull-unsigned-c-string yaml)
@@ -85,7 +95,10 @@
                                           (scheme-object mapping_start)
                                           (scheme-object mapping_end)
                                           (scheme-object seed)
-                                          (scheme-object add_tag))
+                                          (scheme-object add_tag)
+                                          (scheme-object make_exception)
+                                          (scheme-object abort_fn)
+                                          )
     "yaml_parser_t * parser;
     int done = 0;
     int state = 0;
@@ -99,7 +112,33 @@
     );
     while(!done) {
       if(!yaml_parser_parse(parser, &event)) {
-        // FIXME
+        C_word *_problem;
+        C_word problem;
+        C_word *_context;
+        C_word context;
+        C_word exception;
+
+        _problem =
+          C_alloc(C_SIZEOF_STRING(strlen((const char *)parser->problem)));
+        problem = C_string2(&_problem, (char *)parser->problem);
+
+        _context =
+          C_alloc(C_SIZEOF_STRING(strlen((const char *)parser->context)));
+        context = C_string2(&_context, (char *)parser->context);
+
+        C_save(C_fix(parser->context_mark.line + 1));
+        C_save(C_fix(parser->context_mark.column + 1));
+        C_save(C_fix(parser->problem_offset));
+        C_save(problem);
+        C_save(context);
+        exception = C_callback(make_exception, 5);
+
+        yaml_parser_delete(parser);
+        free(parser);
+        done = 1;
+        C_save(exception);
+        C_callback(abort_fn, 1);
+        C_return(seed);
       }
       switch(event.type) {
         case YAML_STREAM_START_EVENT: {

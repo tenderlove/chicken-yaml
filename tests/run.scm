@@ -100,8 +100,15 @@
 )
 
 (test-group "load"
+  (test-group "error"
+    (test-error (yaml-load "--- ["))
+  )
   (test-group "string"
-    (test "foo" (yaml-load "--- foo")))
+    (test "foo" (yaml-load "--- foo"))
+    ; (test 1 (yaml-load "--- 1"))
+    ; (test 1.2 (yaml-load "--- 1.2"))
+    ; (test 'foo (yaml-load "--- :foo"))
+  )
   (test-group "list"
     (test (list "foo" "bar") (yaml-load "--- ['foo', 'bar']"))
     (test (list "foo" (list "bar")) (yaml-load "--- ['foo', ['bar']]"))
