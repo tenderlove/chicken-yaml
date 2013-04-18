@@ -111,6 +111,9 @@
     (test 1000.0 (yaml-load "--- 1_000"))
     (test -inf (yaml-load "--- '-.inf'"))
     (test +inf (yaml-load "--- '.inf'"))
+    (test-assert
+      (let ((value (yaml-load "--- '.nan'")))
+        (not (= value value))))
   )
   (test-group "list"
     (test (list "foo" "bar") (yaml-load "--- ['foo', 'bar']"))

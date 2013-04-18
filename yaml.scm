@@ -33,6 +33,8 @@
          (string->number (irregex-replace/all "[,_]" value "")))
         ((irregex-match "[-+]?.(?:inf|INF|Inf)" value)
          (string->number (irregex-replace/all "[.]" value "")))
+        ((irregex-match "[-+]?.(?:nan|NaN|NAN)" value)
+         (string->number (irregex-replace/all "[.]" value "")))
         (else value)))
 
 (define (yaml-load yaml)
