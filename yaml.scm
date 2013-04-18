@@ -298,6 +298,8 @@
       }
       yaml_event_delete(&event);
     }
+    yaml_parser_delete(parser);
+    free(parser);
     C_return(seed);
     "
 ))
