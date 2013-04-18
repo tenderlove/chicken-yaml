@@ -105,9 +105,10 @@
   )
   (test-group "string"
     (test "foo" (yaml-load "--- foo"))
-    ; (test 1 (yaml-load "--- 1"))
-    ; (test 1.2 (yaml-load "--- 1.2"))
-    ; (test 'foo (yaml-load "--- :foo"))
+    (test 1 (yaml-load "--- 1"))
+    (test 1.2 (yaml-load "--- 1.2"))
+    (test 1000.0 (yaml-load "--- 1,000"))
+    (test 1000.0 (yaml-load "--- 1_000"))
   )
   (test-group "list"
     (test (list "foo" "bar") (yaml-load "--- ['foo', 'bar']"))

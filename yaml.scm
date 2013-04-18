@@ -5,7 +5,7 @@
   (yaml-parse
   (yaml-load))
 
-(import scheme chicken foreign)
+(import scheme chicken foreign irregex)
 
 #>
 #include <yaml.h>
@@ -24,6 +24,15 @@
         (cons the-list (cdr stack))
         (loop (cons (cons (cadr stack) (car stack)) the-list) (cddr stack)))))
 
+(define (scalar value anchor tag plain quoted style seed)
+  (cons (parse-scalar value) seed))
+
+(define (parse-scalar value)
+  (cond ((irregex-match "[-+]?[0-9]+" value) (string->number value))
+        ((irregex-match "[-+]?([0-9][0-9_,]*)?\.[0-9]*([eE][-+][0-9]+)?" value)
+         (string->number (irregex-replace/all "[,_]" value "")))
+        (else value)))
+
 (define (yaml-load yaml)
   (yaml-parse yaml
               (lambda (enc seed) (cons 'stream-start seed))
@@ -32,8 +41,7 @@
                       (cons 'document-start seed))
               (lambda (implicit? seed) (car seed))
               (lambda (alias seed) seed)
-              (lambda (value anchor tag plain quoted style seed)
-                      (cons value seed))
+              scalar
               (lambda (anchor tag implicit style seed)
                       (cons 'sequence-start seed))
               sequence-end
