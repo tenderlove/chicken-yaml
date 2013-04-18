@@ -83,12 +83,14 @@
               abort))
 
 (define (make-exception line column offset problem context)
+  (let ((c (if context context "omg"))
+        (p (if problem problem "zomg")))
     (make-property-condition
          'yaml-parse-error
          'message (string-append "(<unknown>): "
-                    problem " " context " at line "
+                    p " " c " at line "
                     (number->string line) " column "
-                    (number->string column))))
+                    (number->string column)))))
 
 (define parse_yaml (foreign-safe-lambda* void
                                          ((nonnull-unsigned-c-string yaml)
@@ -121,18 +123,22 @@
     while(!done) {
       if(!yaml_parser_parse(parser, &event)) {
         C_word *_problem;
-        C_word problem;
+        C_word problem = C_SCHEME_FALSE;
         C_word *_context;
-        C_word context;
+        C_word context = C_SCHEME_FALSE;
         C_word exception;
 
-        _problem =
-          C_alloc(C_SIZEOF_STRING(strlen((const char *)parser->problem)));
-        problem = C_string2(&_problem, (char *)parser->problem);
+        if (parser->problem) {
+          _problem =
+            C_alloc(C_SIZEOF_STRING(strlen((const char *)parser->problem)));
+          problem = C_string2(&_problem, (char *)parser->problem);
+        }
 
-        _context =
-          C_alloc(C_SIZEOF_STRING(strlen((const char *)parser->context)));
-        context = C_string2(&_context, (char *)parser->context);
+        if (parser->context) {
+          _context =
+            C_alloc(C_SIZEOF_STRING(strlen((const char *)parser->context)));
+          context = C_string2(&_context, (char *)parser->context);
+        }
 
         C_save(C_fix(parser->context_mark.line + 1));
         C_save(C_fix(parser->context_mark.column + 1));
@@ -180,15 +186,16 @@
                 C_word handle = C_SCHEME_FALSE;
                 C_word prefix = C_SCHEME_FALSE;
                 C_word *p  = C_alloc(C_SIZEOF_PAIR);
+
                 C_word pair;
                 if (start->handle) {
-                  C_word *a = C_alloc(C_SIZEOF_STRING(strlen((const char *)start->handle)));
-                  handle = C_string2(&a, (char *)start->handle);
+                  C_word *_handle = C_alloc(C_SIZEOF_STRING(strlen((const char *)start->handle)));
+                  handle = C_string2(&_handle, (char *)start->handle);
                 }
 
                 if (start->prefix) {
-                  C_word *a = C_alloc(C_SIZEOF_STRING(strlen((const char *)start->prefix)));
-                  prefix = C_string2(&a, (char *)start->prefix);
+                  C_word *_prefix = C_alloc(C_SIZEOF_STRING(strlen((const char *)start->prefix)));
+                  prefix = C_string2(&_prefix, (char *)start->prefix);
                 }
 
                 pair = C_pair(&p, handle, prefix);
