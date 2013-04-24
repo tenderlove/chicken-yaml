@@ -3,7 +3,8 @@
 
 (module yaml
   (yaml-parse
-  (yaml-load yaml-parse-error))
+  yaml-load
+  yaml-parse2)
 
 (import scheme chicken foreign irregex)
 (use irregex srfi-13)
@@ -54,8 +55,91 @@
               '()))
 
 (define-foreign-type yaml_parser (c-pointer "yaml_parser_t"))
+(define-foreign-type yaml_parser_t (c-pointer "yaml_parser_t"))
+(define-foreign-type yaml_event_t (c-pointer "yaml_event_t"))
 
 (define (add-tag pair tags) (append tags (list pair)))
+
+(define-record-type parser-context
+                    (wrap-parser context
+                                 stream-start
+                                 stream-end
+                                 document-start
+                                 document-end
+                                 alias
+                                 scalar
+                                 sequence-start
+                                 sequence-end
+                                 mapping-start
+                                 mapping-end
+                                 seed)
+                    parser-context?
+                    (context get-context)
+                    (stream-start get-stream-start)
+                    (stream-end get-stream-end)
+                    (document-start get-document-start)
+                    (seed get-seed))
+
+(define (yaml-parse2 yaml
+                    stream-start
+                    stream-end
+                    document-start
+                    document-end
+                    alias
+                    scalar
+                    sequence-start
+                    sequence-end
+                    mapping-start
+                    mapping-end
+                    seed)
+  (let* ((parser (make-yaml-parser))
+         (ctx (wrap-parser parser
+                           stream-start
+                           stream-end
+                           document-start
+                           document-end
+                           alias
+                           scalar
+                           sequence-start
+                           sequence-end
+                           mapping-start
+                           mapping-end
+                           seed)))
+    (do-parse yaml ctx)))
+
+(define yaml:stream-start-event (foreign-value "YAML_STREAM_START_EVENT" int))
+(define yaml:stream-end-event (foreign-value "YAML_STREAM_END_EVENT" int))
+(define yaml:document-start-event (foreign-value "YAML_DOCUMENT_START_EVENT" int))
+
+(define (handle-stream-start-event ctx event seed)
+  (let ((cb (get-stream-start ctx)))
+    (cb (event.data.start_stream.encoding event) seed)))
+
+(define (handle-stream-end-event ctx event seed)
+  ((get-stream-end ctx) seed))
+
+(define (handle-document-start-event ctx event seed)
+  (let ((cb (get-document-start ctx)))
+    (cb (event.data.document_start.version_directives event) seed)))
+
+(define (do-parse yaml ctx)
+  (yaml_parser_set_input_string (get-context ctx)
+                                yaml
+                                (string-length yaml))
+  (let ((parser (get-context ctx))
+        (event (make-yaml-event)))
+    (let loop ((seed (get-seed ctx))
+               (state (yaml_parser_parse parser event)))
+    (cond ((= yaml:stream-start-event state)
+           (loop (handle-stream-start-event ctx event seed)
+                 (yaml_parser_parse parser event)))
+
+          ((= yaml:document-start-event state)
+           (loop (handle-document-start-event ctx event seed)
+                 (yaml_parser_parse parser event)))
+
+          ((= yaml:stream-end-event)
+           (handle-stream-end-event ctx event seed))))))
 
 (define (yaml-parse yaml
                     stream-start
@@ -95,6 +179,11 @@
                     (number->string line) " column "
                     (number->string column)))))
 
+(define yaml_parser_set_input_string (foreign-lambda void
+                                                     "yaml_parser_set_input_string"
+                                                     yaml_parser_t
+                                                     nonnull-unsigned-c-string
+                                                     size_t))
 (define parse_yaml (foreign-safe-lambda* void
                                          ((nonnull-unsigned-c-string yaml)
                                           (scheme-object stream_start)
@@ -361,13 +450,55 @@
     "
 ))
 
-(define alloc-yaml-parser (foreign-lambda* yaml_parser ()
+(define (make-yaml-parser)
+  (set-finalizer! (alloc-yaml-parser) free-yaml-parser))
+
+(define (make-yaml-event)
+  (set-finalizer! (alloc-yaml-event (foreign-type-size "yaml_event_t"))
+                  free-yaml-event))
+
+(define alloc-yaml-event (foreign-lambda yaml_event_t "malloc" size_t))
+(define free-yaml-event (foreign-lambda void "free" yaml_event_t))
+
+(define yaml_parser_parse (foreign-lambda int
+                                          "yaml_parser_parse"
+                                          yaml_parser_t
+                                          yaml_event_t))
+
+(define free-yaml-parser (foreign-lambda* void ((yaml_parser_t parser))
+    "yaml_parser_delete(parser);\n"
+    "free(parser);\n"))
+
+(define alloc-yaml-parser (foreign-lambda* yaml_parser_t ()
     "yaml_parser_t * parser;\n"
     "parser = malloc(sizeof(yaml_parser_t));\n"
     "yaml_parser_initialize(parser);\n"
     "C_return(parser);\n"))
 
-(define free-yaml-parser (foreign-lambda* void ((yaml_parser parser))
+(define free-yaml-parser (foreign-lambda* void ((yaml_parser_t parser))
     "yaml_parser_delete(parser);\n"
     "free(parser);\n"))
+
+(define event.data.start_stream.encoding (foreign-lambda* int
+                                                          ((yaml_event_t event))
+                                                          "C_return(event->data.stream_start.encoding);"))
+
+(define event.data.document_start.version_directive (foreign-lambda* c-pointer
+                                                          ((yaml_event_t event))
+                                                          "C_return(event->data.document_start.version_directive);"))
+
+(define event.data.document_start.version_directive->major (foreign-lambda* int
+                                                          ((yaml_event_t event))
+                                                          "C_return(event->data.document_start.version_directive->major);"))
+
+(define event.data.document_start.version_directive->minor (foreign-lambda* int
+                                                          ((yaml_event_t event))
+                                                          "C_return(event->data.document_start.version_directive->minor);"))
+
+(define (event.data.document_start.version_directives event)
+  (if (event.data.document_start.version_directive event)
+      (cons (event.data.document_start.version_directive->major event)
+            (event.data.document_start.version_directive->minor event))
+      '()))
+
 )
