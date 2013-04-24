@@ -3,13 +3,12 @@
 
 (module yaml
   (yaml-parse
-  (yaml-load))
+  (yaml-load yaml-parse-error))
 
 (import scheme chicken foreign irregex)
+(use irregex srfi-13)
 
-#>
-#include <yaml.h>
-<#
+(foreign-declare "#include <yaml.h>")
 
 
 (define (sequence-end seed)
