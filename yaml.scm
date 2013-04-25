@@ -173,6 +173,9 @@
         (scalar-style event)
         seed)))
 
+(define (handle-mapping-end-event ctx event seed)
+  ((get-mapping-end ctx) seed))
+
 (define (parse-loop ctx parser event seed)
   (let* ((state (yaml_parser_parse parser event))
          (type (event.type event)))
@@ -195,6 +198,10 @@
           ((= yaml:mapping-start-event type)
            (parse-loop ctx parser event
                        (handle-mapping-start-event ctx event seed)))
+
+          ((= yaml:mapping-end-event type)
+           (parse-loop ctx parser event
+                       (handle-mapping-end-event ctx event seed)))
 
           ((= yaml:scalar-event type)
            (parse-loop ctx parser event
