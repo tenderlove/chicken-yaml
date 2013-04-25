@@ -57,7 +57,6 @@
 (define-foreign-type yaml_event_t (c-pointer "yaml_event_t"))
 (define-foreign-type yaml_tag_directive_t (c-pointer "yaml_tag_directive_t"))
 (define sizeof_tag_directive_t (foreign-type-size "yaml_tag_directive_t"))
-(define sizeof_parser_t (foreign-type-size "yaml_parser_t"))
 
 (define (add-tag pair tags) (append tags (list pair)))
 
@@ -247,8 +246,6 @@
                                                      yaml_parser_t
                                                      nonnull-unsigned-c-string
                                                      size_t))
-(define (make-yaml-parser)
-  (set-finalizer! (alloc-yaml-parser) free-yaml-parser!))
 
 (define (make-yaml-event) (allocate (foreign-type-size "yaml_event_t")))
 
@@ -266,10 +263,10 @@
                                                "yaml_parser_initialize"
                                                yaml_parser_t))
 
-(define (alloc-yaml-parser)
-  (let ((parser (allocate sizeof_parser_t)))
+(define (make-yaml-parser)
+  (let ((parser (allocate (foreign-type-size "yaml_parser_t"))))
     (yaml_parser_initialize parser)
-    parser))
+    (set-finalizer! parser free-yaml-parser!)))
 
 (define (free-yaml-parser! parser)
   (yaml_parser_delete parser)
