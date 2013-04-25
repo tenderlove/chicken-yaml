@@ -86,6 +86,7 @@
                     (mapping-start get-mapping-start)
                     (mapping-end get-mapping-end)
                     (scalar get-scalar)
+                    (alias get-alias)
                     (seed get-seed))
 
 (define (yaml-parse2 yaml
@@ -173,6 +174,9 @@
         (scalar-style event)
         seed)))
 
+(define (handle-alias-event ctx event seed)
+  ((get-alias ctx) (alias-anchor event) seed))
+
 (define (handle-mapping-end-event ctx event seed)
   ((get-mapping-end ctx) seed))
 
@@ -206,6 +210,10 @@
           ((= yaml:scalar-event type)
            (parse-loop ctx parser event
                        (handle-scalar-event ctx event seed)))
+
+          ((= yaml:alias-event type)
+           (parse-loop ctx parser event
+                       (handle-alias-event ctx event seed)))
 
           ((= yaml:document-end-event type)
            (parse-loop ctx parser event
@@ -686,6 +694,10 @@
 (define mapping-style (foreign-lambda* int
                                        ((yaml_event_t e))
                                        "C_return(e->data.mapping_start.style);"))
+
+(define alias-anchor (foreign-lambda* c-string
+                                       ((yaml_event_t e))
+                                       "C_return(e->data.alias.anchor);"))
 
 (define event.type (foreign-lambda* int
   ((yaml_event_t event))
