@@ -183,7 +183,6 @@
   (let ((state (yaml_parser_parse parser event)))
     (if (= 0 state)
         (begin
-          (yaml_parser_delete parser)
           (free-yaml-event event)
           (error "something is broken"))
         state)))
