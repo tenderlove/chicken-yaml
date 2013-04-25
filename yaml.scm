@@ -80,6 +80,7 @@
                     (stream-start get-stream-start)
                     (stream-end get-stream-end)
                     (document-start get-document-start)
+                    (scalar get-scalar)
                     (seed get-seed))
 
 (define (yaml-parse2 yaml
@@ -112,6 +113,13 @@
 (define yaml:stream-start-event (foreign-value "YAML_STREAM_START_EVENT" int))
 (define yaml:stream-end-event (foreign-value "YAML_STREAM_END_EVENT" int))
 (define yaml:document-start-event (foreign-value "YAML_DOCUMENT_START_EVENT" int))
+(define yaml:document-end-event (foreign-value "YAML_DOCUMENT_END_EVENT" int))
+(define yaml:alias-event (foreign-value "YAML_ALIAS_EVENT" int))
+(define yaml:scalar-event (foreign-value "YAML_SCALAR_EVENT" int))
+(define yaml:sequence-start-event (foreign-value "YAML_SEQUENCE_START_EVENT" int))
+(define yaml:sequence-end-event (foreign-value "YAML_SEQUENCE_END_EVENT" int))
+(define yaml:mapping-start-event (foreign-value "YAML_MAPPING_START_EVENT" int))
+(define yaml:mapping-end-event (foreign-value "YAML_MAPPING_END_EVENT" int))
 
 (define (handle-stream-start-event ctx event seed)
   (let ((cb (get-stream-start ctx)))
@@ -126,6 +134,16 @@
         (tag-directives event)
         seed)))
 
+(define (handle-scalar-event ctx event seed)
+  (let ((cb (get-scalar ctx)))
+    (cb (scalar-value event)
+        (scalar-anchor event)
+        (scalar-tag event)
+        (if (= 0 (scalar-plain-implicit event)) #f #t)
+        (if (= 0 (scalar-quoted-implicit event)) #f #t)
+        (scalar-style event)
+        seed)))
+
 (define (parse-loop ctx parser event seed)
   (let* ((state (yaml_parser_parse parser event))
          (type (event.type event)))
@@ -136,6 +154,10 @@
           ((= yaml:document-start-event type)
            (parse-loop ctx parser event
                        (handle-document-start-event ctx event seed)))
+
+          ((= yaml:scalar-event type)
+           (parse-loop ctx parser event
+                       (handle-scalar-event ctx event seed)))
 
           ((= yaml:stream-end-event type)
            (handle-stream-end-event ctx event seed))
@@ -542,6 +564,40 @@
     (if (or (not start) (pointer=? start end))
         acc
         (loop (pointer+ start sizeof_tag_directive_t) end (cons (tag-info start) acc)))))
+
+(define (scalar-value event)
+  (let* ((len (scalar-len event))
+         (str (make-string len)))
+    (move-memory! (scalar-ptr event) str len)
+    str))
+
+(define scalar-len (foreign-lambda* int
+                                    ((yaml_event_t event))
+                                    "C_return(event->data.scalar.length);"))
+
+(define scalar-ptr (foreign-lambda* c-pointer
+                                    ((yaml_event_t event))
+                                    "C_return(event->data.scalar.value);"))
+
+(define scalar-anchor (foreign-lambda* c-string
+                                       ((yaml_event_t e))
+                                       "C_return(e->data.scalar.anchor);"))
+
+(define scalar-tag (foreign-lambda* c-string
+                                       ((yaml_event_t e))
+                                       "C_return(e->data.scalar.tag);"))
+
+(define scalar-plain-implicit (foreign-lambda* int
+                                       ((yaml_event_t e))
+                                       "C_return(e->data.scalar.plain_implicit);"))
+
+(define scalar-quoted-implicit (foreign-lambda* int
+                                       ((yaml_event_t e))
+                                       "C_return(e->data.scalar.quoted_implicit);"))
+
+(define scalar-style (foreign-lambda* int
+                                       ((yaml_event_t e))
+                                       "C_return(e->data.scalar.style);"))
 
 (define event.type (foreign-lambda* int
   ((yaml_event_t event))
