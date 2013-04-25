@@ -184,6 +184,7 @@
     (if (= 0 state)
         (begin
           (yaml_parser_delete parser)
+          (free event)
           (error "something is broken"))
         state)))
 
@@ -237,7 +238,9 @@
                                 (string-length yaml))
   (let ((parser (get-context ctx))
         (event (make-yaml-event)))
-    (parse-loop ctx parser event (get-seed ctx))))
+    (let ((seed (parse-loop ctx parser event (get-seed ctx))))
+      (free event)
+      seed)))
 
 
 (define yaml_parser_set_input_string (foreign-lambda void
@@ -248,9 +251,7 @@
 (define (make-yaml-parser)
   (set-finalizer! (alloc-yaml-parser) free-yaml-parser!))
 
-(define (make-yaml-event)
-  (set-finalizer! (allocate (foreign-type-size "yaml_event_t"))
-                  free))
+(define (make-yaml-event) (allocate (foreign-type-size "yaml_event_t")))
 
 (define yaml_event_delete (foreign-lambda void
                                           "yaml_event_delete"
