@@ -152,6 +152,14 @@
         (sequence-style event)
         seed)))
 
+(define (handle-mapping-start-event ctx event seed)
+  (let ((cb (get-mapping-start ctx)))
+    (cb (mapping-anchor event)
+        (mapping-tag event)
+        (if (= 0 (mapping-implicit event)) #f #t)
+        (mapping-style event)
+        seed)))
+
 (define (handle-sequence-end-event ctx event seed)
   ((get-sequence-end ctx) seed))
 
@@ -183,6 +191,10 @@
           ((= yaml:sequence-end-event type)
            (parse-loop ctx parser event
                        (handle-sequence-end-event ctx event seed)))
+
+          ((= yaml:mapping-start-event type)
+           (parse-loop ctx parser event
+                       (handle-mapping-start-event ctx event seed)))
 
           ((= yaml:scalar-event type)
            (parse-loop ctx parser event
@@ -651,6 +663,22 @@
 (define sequence-style (foreign-lambda* int
                                        ((yaml_event_t e))
                                        "C_return(e->data.sequence_start.style);"))
+
+(define mapping-anchor (foreign-lambda* c-string
+                                       ((yaml_event_t e))
+                                       "C_return(e->data.mapping_start.anchor);"))
+
+(define mapping-tag (foreign-lambda* c-string
+                                       ((yaml_event_t e))
+                                       "C_return(e->data.mapping_start.tag);"))
+
+(define mapping-implicit (foreign-lambda* int
+                                       ((yaml_event_t e))
+                                       "C_return(e->data.mapping_start.implicit);"))
+
+(define mapping-style (foreign-lambda* int
+                                       ((yaml_event_t e))
+                                       "C_return(e->data.mapping_start.style);"))
 
 (define event.type (foreign-lambda* int
   ((yaml_event_t event))
