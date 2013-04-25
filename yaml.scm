@@ -184,7 +184,7 @@
     (if (= 0 state)
         (begin
           (yaml_parser_delete parser)
-          (free event)
+          (free-yaml-event event)
           (error "something is broken"))
         state)))
 
@@ -239,7 +239,7 @@
   (let ((parser (get-context ctx))
         (event (make-yaml-event)))
     (let ((seed (parse-loop ctx parser event (get-seed ctx))))
-      (free event)
+      (free-yaml-event event)
       seed)))
 
 
@@ -253,6 +253,7 @@
 
 (define (make-yaml-event) (allocate (foreign-type-size "yaml_event_t")))
 
+(define (free-yaml-event event) (yaml_event_delete event) (free event))
 (define yaml_event_delete (foreign-lambda void
                                           "yaml_event_delete"
                                           yaml_event_t))
