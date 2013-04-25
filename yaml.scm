@@ -7,7 +7,7 @@
   yaml-parse2)
 
 (import scheme chicken foreign irregex)
-(use irregex srfi-13)
+(use irregex srfi-13 lolevel)
 
 (foreign-declare "#include <yaml.h>")
 
@@ -57,6 +57,8 @@
 (define-foreign-type yaml_parser (c-pointer "yaml_parser_t"))
 (define-foreign-type yaml_parser_t (c-pointer "yaml_parser_t"))
 (define-foreign-type yaml_event_t (c-pointer "yaml_event_t"))
+(define-foreign-type yaml_tag_directive_t (c-pointer "yaml_tag_directive_t"))
+(define sizeof_tag_directive_t (foreign-type-size "yaml_tag_directive_t"))
 
 (define (add-tag pair tags) (append tags (list pair)))
 
@@ -120,7 +122,25 @@
 
 (define (handle-document-start-event ctx event seed)
   (let ((cb (get-document-start ctx)))
-    (cb (event.data.document_start.version_directives event) seed)))
+    (cb (event.data.document_start.version_directives event)
+        (tag-directives event)
+        seed)))
+
+(define (parse-loop ctx parser event seed)
+  (let* ((state (yaml_parser_parse parser event))
+         (type (event.type event)))
+    (cond ((= yaml:stream-start-event type)
+           (parse-loop ctx parser event
+                       (handle-stream-start-event ctx event seed)))
+
+          ((= yaml:document-start-event type)
+           (parse-loop ctx parser event
+                       (handle-document-start-event ctx event seed)))
+
+          ((= yaml:stream-end-event type)
+           (handle-stream-end-event ctx event seed))
+
+          (else (parse-loop ctx parser event seed)))))
 
 (define (do-parse yaml ctx)
   (yaml_parser_set_input_string (get-context ctx)
@@ -128,18 +148,8 @@
                                 (string-length yaml))
   (let ((parser (get-context ctx))
         (event (make-yaml-event)))
-    (let loop ((seed (get-seed ctx))
-               (state (yaml_parser_parse parser event)))
-    (cond ((= yaml:stream-start-event state)
-           (loop (handle-stream-start-event ctx event seed)
-                 (yaml_parser_parse parser event)))
+    (parse-loop ctx parser event (get-seed ctx))))
 
-          ((= yaml:document-start-event state)
-           (loop (handle-document-start-event ctx event seed)
-                 (yaml_parser_parse parser event)))
-
-          ((= yaml:stream-end-event)
-           (handle-stream-end-event ctx event seed))))))
 
 (define (yaml-parse yaml
                     stream-start
@@ -460,6 +470,10 @@
 (define alloc-yaml-event (foreign-lambda yaml_event_t "malloc" size_t))
 (define free-yaml-event (foreign-lambda void "free" yaml_event_t))
 
+(define yaml_event_delete (foreign-lambda void
+                                          "yaml_event_delete"
+                                          yaml_event_t))
+
 (define yaml_parser_parse (foreign-lambda int
                                           "yaml_parser_parse"
                                           yaml_parser_t
@@ -480,20 +494,20 @@
     "free(parser);\n"))
 
 (define event.data.start_stream.encoding (foreign-lambda* int
-                                                          ((yaml_event_t event))
-                                                          "C_return(event->data.stream_start.encoding);"))
+  ((yaml_event_t event))
+  "C_return(event->data.stream_start.encoding);"))
 
 (define event.data.document_start.version_directive (foreign-lambda* c-pointer
-                                                          ((yaml_event_t event))
-                                                          "C_return(event->data.document_start.version_directive);"))
+  ((yaml_event_t event))
+  "C_return(event->data.document_start.version_directive);"))
 
 (define event.data.document_start.version_directive->major (foreign-lambda* int
-                                                          ((yaml_event_t event))
-                                                          "C_return(event->data.document_start.version_directive->major);"))
+  ((yaml_event_t event))
+  "C_return(event->data.document_start.version_directive->major);"))
 
 (define event.data.document_start.version_directive->minor (foreign-lambda* int
-                                                          ((yaml_event_t event))
-                                                          "C_return(event->data.document_start.version_directive->minor);"))
+  ((yaml_event_t event))
+  "C_return(event->data.document_start.version_directive->minor);"))
 
 (define (event.data.document_start.version_directives event)
   (if (event.data.document_start.version_directive event)
@@ -501,4 +515,26 @@
             (event.data.document_start.version_directive->minor event))
       '()))
 
+(define event.data.document_start.tag_directives.start (foreign-lambda*
+  yaml_tag_directive_t
+  ((yaml_event_t event))
+  "C_return(event->data.document_start.tag_directives.start);"))
+
+(define event.data.document_start.tag_directives.end (foreign-lambda*
+  yaml_tag_directive_t
+  ((yaml_event_t event))
+  "C_return(event->data.document_start.tag_directives.end);"))
+
+(define (tag-directives event)
+  (let loop ((start (event.data.document_start.tag_directives.start event))
+            (end (event.data.document_start.tag_directives.end event))
+            (acc '()))
+    (if (or (not start) (pointer=? start end))
+        acc
+        (loop (pointer+ start sizeof_tag_directive_t) end (cons start acc)))))
+
+(define event.type (foreign-lambda*
+  int
+  ((yaml_event_t event))
+  "C_return(event->type);"))
 )
