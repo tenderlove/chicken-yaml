@@ -70,7 +70,7 @@
 (test-group "sequence-start"
   (test "start" '(sequence-start #f #f #t 1)
                 (find-event 'sequence-start (yaml-exp "---\n- foo")))
-  (test "tag" '(sequence-start "tag:yaml.org,2002:seq" #f #f 2)
+  (test "tag" '(sequence-start #f "tag:yaml.org,2002:seq" #f 2)
                 (find-event 'sequence-start (yaml-exp "!!seq [ 'foo' ]")))
   (test "anchor" '(sequence-start "1" #f #t 1)
                 (find-event 'sequence-start (yaml-exp "--- &1\n- 1\n")))
@@ -86,7 +86,7 @@
 (test-group "mapping-start"
   (test "start" '(mapping-start #f #f #t 1)
                 (find-event 'mapping-start (yaml-exp "---\nfoo: bar")))
-  (test "tag" '(mapping-start "tag:yaml.org,2002:map" #f #f 2)
+  (test "tag" '(mapping-start #f "tag:yaml.org,2002:map" #f 2)
                 (find-event 'mapping-start (yaml-exp "!!map { foo: bar }")))
   (test "anchor" '(mapping-start "A" #f #t 2)
                 (find-event 'mapping-start (yaml-exp "--- &A { foo: bar }")))

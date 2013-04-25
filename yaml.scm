@@ -136,7 +136,7 @@
 
 (define (handle-document-start-event ctx event seed)
   (let ((cb (get-document-start ctx)))
-    (cb (event.data.document_start.version_directives event)
+    (cb (document-version-directives event)
         (tag-directives event)
         seed)))
 
@@ -241,7 +241,9 @@
     (parse-loop ctx parser event (get-seed ctx))))
 
 
-(define (yaml-parse yaml
+(define yaml-parse yaml-parse2)
+
+(define (yaml-parsexx yaml
                     stream-start
                     stream-end
                     document-start
@@ -599,9 +601,9 @@
   ((yaml_event_t event))
   "C_return(event->data.document_start.version_directive->minor);"))
 
-(define (event.data.document_start.version_directives event)
+(define (document-version-directives event)
   (if (event.data.document_start.version_directive event)
-      (cons (event.data.document_start.version_directive->major event)
+      (list (event.data.document_start.version_directive->major event)
             (event.data.document_start.version_directive->minor event))
       '()))
 
