@@ -81,6 +81,10 @@
                     (stream-end get-stream-end)
                     (document-start get-document-start)
                     (document-end get-document-end)
+                    (sequence-start get-sequence-start)
+                    (sequence-end get-sequence-end)
+                    (mapping-start get-mapping-start)
+                    (mapping-end get-mapping-end)
                     (scalar get-scalar)
                     (seed get-seed))
 
@@ -140,6 +144,14 @@
     (cb (if (= 0 (document-end-implicit event)) #f #t)
         seed)))
 
+(define (handle-sequence-start-event ctx event seed)
+  (let ((cb (get-sequence-start ctx)))
+    (cb (sequence-anchor event)
+        (sequence-tag event)
+        (if (= 0 (sequence-implicit event)) #f #t)
+        (sequence-style event)
+        seed)))
+
 (define (handle-scalar-event ctx event seed)
   (let ((cb (get-scalar ctx)))
     (cb (scalar-value event)
@@ -160,6 +172,10 @@
           ((= yaml:document-start-event type)
            (parse-loop ctx parser event
                        (handle-document-start-event ctx event seed)))
+
+          ((= yaml:sequence-start-event type)
+           (parse-loop ctx parser event
+                       (handle-sequence-start-event ctx event seed)))
 
           ((= yaml:scalar-event type)
            (parse-loop ctx parser event
@@ -612,6 +628,22 @@
 (define document-end-implicit (foreign-lambda* int
                                        ((yaml_event_t e))
                                        "C_return(e->data.document_end.implicit);"))
+
+(define sequence-anchor (foreign-lambda* c-string
+                                       ((yaml_event_t e))
+                                       "C_return(e->data.sequence_start.anchor);"))
+
+(define sequence-tag (foreign-lambda* c-string
+                                       ((yaml_event_t e))
+                                       "C_return(e->data.sequence_start.tag);"))
+
+(define sequence-implicit (foreign-lambda* int
+                                       ((yaml_event_t e))
+                                       "C_return(e->data.sequence_start.implicit);"))
+
+(define sequence-style (foreign-lambda* int
+                                       ((yaml_event_t e))
+                                       "C_return(e->data.sequence_start.style);"))
 
 (define event.type (foreign-lambda* int
   ((yaml_event_t event))
