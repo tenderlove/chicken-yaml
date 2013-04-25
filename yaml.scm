@@ -525,16 +525,25 @@
   ((yaml_event_t event))
   "C_return(event->data.document_start.tag_directives.end);"))
 
+(define tag-handle (foreign-lambda* c-string
+                                    ((yaml_tag_directive_t tag))
+                                    "C_return(tag->handle);"))
+
+(define tag-prefix (foreign-lambda* c-string
+                                    ((yaml_tag_directive_t tag))
+                                    "C_return(tag->prefix);"))
+(define (tag-info tag)
+  (cons (tag-handle tag) (tag-prefix tag)))
+
 (define (tag-directives event)
   (let loop ((start (event.data.document_start.tag_directives.start event))
             (end (event.data.document_start.tag_directives.end event))
             (acc '()))
     (if (or (not start) (pointer=? start end))
         acc
-        (loop (pointer+ start sizeof_tag_directive_t) end (cons start acc)))))
+        (loop (pointer+ start sizeof_tag_directive_t) end (cons (tag-info start) acc)))))
 
-(define event.type (foreign-lambda*
-  int
+(define event.type (foreign-lambda* int
   ((yaml_event_t event))
   "C_return(event->type);"))
 )
