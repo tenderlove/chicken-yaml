@@ -152,6 +152,9 @@
         (sequence-style event)
         seed)))
 
+(define (handle-sequence-end-event ctx event seed)
+  ((get-sequence-end ctx) seed))
+
 (define (handle-scalar-event ctx event seed)
   (let ((cb (get-scalar ctx)))
     (cb (scalar-value event)
@@ -176,6 +179,10 @@
           ((= yaml:sequence-start-event type)
            (parse-loop ctx parser event
                        (handle-sequence-start-event ctx event seed)))
+
+          ((= yaml:sequence-end-event type)
+           (parse-loop ctx parser event
+                       (handle-sequence-end-event ctx event seed)))
 
           ((= yaml:scalar-event type)
            (parse-loop ctx parser event
