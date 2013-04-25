@@ -180,8 +180,16 @@
 (define (handle-mapping-end-event ctx event seed)
   ((get-mapping-end ctx) seed))
 
+(define (pull-event parser event)
+  (let ((state (yaml_parser_parse parser event)))
+    (if (= 0 state)
+        (begin
+          (yaml_parser_delete parser)
+          (error "something is broken"))
+        state)))
+
 (define (parse-loop ctx parser event seed)
-  (let* ((state (yaml_parser_parse parser event))
+  (let* ((state (pull-event parser event))
          (type (event.type event)))
     (cond ((= yaml:stream-start-event type)
            (parse-loop ctx parser event
@@ -698,6 +706,10 @@
 (define alias-anchor (foreign-lambda* c-string
                                        ((yaml_event_t e))
                                        "C_return(e->data.alias.anchor);"))
+
+(define yaml_parser_delete (foreign-lambda void
+                                           "yaml_parser_delete"
+                                            yaml_parser_t))
 
 (define event.type (foreign-lambda* int
   ((yaml_event_t event))
