@@ -80,6 +80,7 @@
                     (stream-start get-stream-start)
                     (stream-end get-stream-end)
                     (document-start get-document-start)
+                    (document-end get-document-end)
                     (scalar get-scalar)
                     (seed get-seed))
 
@@ -134,6 +135,11 @@
         (tag-directives event)
         seed)))
 
+(define (handle-document-end-event ctx event seed)
+  (let ((cb (get-document-end ctx)))
+    (cb (if (= 0 (document-end-implicit event)) #f #t)
+        seed)))
+
 (define (handle-scalar-event ctx event seed)
   (let ((cb (get-scalar ctx)))
     (cb (scalar-value event)
@@ -158,6 +164,10 @@
           ((= yaml:scalar-event type)
            (parse-loop ctx parser event
                        (handle-scalar-event ctx event seed)))
+
+          ((= yaml:document-end-event type)
+           (parse-loop ctx parser event
+                       (handle-document-end-event ctx event seed)))
 
           ((= yaml:stream-end-event type)
            (handle-stream-end-event ctx event seed))
@@ -598,6 +608,10 @@
 (define scalar-style (foreign-lambda* int
                                        ((yaml_event_t e))
                                        "C_return(e->data.scalar.style);"))
+
+(define document-end-implicit (foreign-lambda* int
+                                       ((yaml_event_t e))
+                                       "C_return(e->data.document_end.implicit);"))
 
 (define event.type (foreign-lambda* int
   ((yaml_event_t event))
