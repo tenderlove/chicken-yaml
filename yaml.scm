@@ -23,7 +23,9 @@
         (loop (cons (cons (cadr stack) (car stack)) the-list) (cddr stack)))))
 
 (define (scalar value anchor tag plain quoted style seed)
-  (cons (parse-scalar value) seed))
+  (if quoted
+      (cons value seed)
+      (cons (parse-scalar value) seed)))
 
 (define (parse-scalar value)
   (cond ((string-null? value) '())
