@@ -245,7 +245,7 @@
                                                      nonnull-unsigned-c-string
                                                      size_t))
 (define (make-yaml-parser)
-  (set-finalizer! (alloc-yaml-parser) free-yaml-parser))
+  (set-finalizer! (alloc-yaml-parser) free-yaml-parser!))
 
 (define (make-yaml-event)
   (set-finalizer! (alloc-yaml-event (foreign-type-size "yaml_event_t"))
@@ -263,19 +263,15 @@
                                           yaml_parser_t
                                           yaml_event_t))
 
-(define free-yaml-parser (foreign-lambda* void ((yaml_parser_t parser))
-    "yaml_parser_delete(parser);\n"
-    "free(parser);\n"))
-
 (define alloc-yaml-parser (foreign-lambda* yaml_parser_t ()
     "yaml_parser_t * parser;\n"
     "parser = malloc(sizeof(yaml_parser_t));\n"
     "yaml_parser_initialize(parser);\n"
     "C_return(parser);\n"))
 
-(define free-yaml-parser (foreign-lambda* void ((yaml_parser_t parser))
-    "yaml_parser_delete(parser);\n"
-    "free(parser);\n"))
+(define (free-yaml-parser! parser)
+  (yaml_parser_delete parser)
+  (free parser))
 
 (define event.data.start_stream.encoding (foreign-lambda* int
   ((yaml_event_t event))
@@ -299,12 +295,12 @@
             (event.data.document_start.version_directive->minor event))
       '()))
 
-(define event.data.document_start.tag_directives.start (foreign-lambda*
+(define tag-directives.start (foreign-lambda*
   yaml_tag_directive_t
   ((yaml_event_t event))
   "C_return(event->data.document_start.tag_directives.start);"))
 
-(define event.data.document_start.tag_directives.end (foreign-lambda*
+(define tag-directives.end (foreign-lambda*
   yaml_tag_directive_t
   ((yaml_event_t event))
   "C_return(event->data.document_start.tag_directives.end);"))
@@ -320,8 +316,8 @@
   (cons (tag-handle tag) (tag-prefix tag)))
 
 (define (tag-directives event)
-  (let loop ((start (event.data.document_start.tag_directives.start event))
-            (end (event.data.document_start.tag_directives.end event))
+  (let loop ((start (tag-directives.start event))
+            (end (tag-directives.end event))
             (acc '()))
     (if (or (not start) (pointer=? start end))
         acc
