@@ -146,14 +146,14 @@
 
 (define (handle-document-end-event ctx event seed)
   (let ((cb (get-document-end ctx)))
-    (cb (if (= 0 (document-end-implicit event)) #f #t)
+    (cb (not (= 0 (document-end-implicit event)))
         seed)))
 
 (define (handle-sequence-start-event ctx event seed)
   (let ((cb (get-sequence-start ctx)))
     (cb (sequence-anchor event)
         (sequence-tag event)
-        (if (= 0 (sequence-implicit event)) #f #t)
+        (not (= 0 (sequence-implicit event)))
         (sequence-style event)
         seed)))
 
@@ -161,7 +161,7 @@
   (let ((cb (get-mapping-start ctx)))
     (cb (mapping-anchor event)
         (mapping-tag event)
-        (if (= 0 (mapping-implicit event)) #f #t)
+        (not (= 0 (mapping-implicit event)))
         (mapping-style event)
         seed)))
 
@@ -173,8 +173,8 @@
     (cb (scalar-value event)
         (scalar-anchor event)
         (scalar-tag event)
-        (if (= 0 (scalar-plain-implicit event)) #f #t)
-        (if (= 0 (scalar-quoted-implicit event)) #f #t)
+        (not (= 0 (scalar-plain-implicit event)))
+        (not (= 0 (scalar-quoted-implicit event)))
         (scalar-style event)
         seed)))
 
