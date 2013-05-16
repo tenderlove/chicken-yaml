@@ -5,7 +5,7 @@
   (yaml-parse yaml-load)
 
 (import scheme chicken foreign irregex)
-(use irregex srfi-13 lolevel)
+(use irregex srfi-13 lolevel sql-null)
 
 (foreign-declare "#include <yaml.h>")
 
@@ -28,7 +28,9 @@
       (cons (parse-scalar value) seed)))
 
 (define (parse-scalar value)
-  (cond ((string-null? value) '())
+  (cond ((string-null? value) (sql-null))
+        ((string-index value #\: 0 1)
+         (string->symbol (irregex-replace "^:" value)))
         ((irregex-match "[-+]?[0-9][0-9_,]*" value)
          (string->number (irregex-replace/all "[,_]" value "")))
         ((irregex-match "-?([0-9][0-9_,]*)?\\.[0-9]*([eE][-+][0-9]+)?" value)

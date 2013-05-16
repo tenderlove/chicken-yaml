@@ -1,4 +1,4 @@
-(use yaml test srfi-1)
+(use yaml test srfi-1 sql-null)
 
 (test-begin "yaml")
 
@@ -112,11 +112,12 @@
     (test 1000.0 (yaml-load "--- 1_000.0"))
     (test -inf (yaml-load "--- -.inf"))
     (test +inf (yaml-load "--- .inf"))
-    (test-assert (null? (yaml-load "--- ")))
+    (test-assert (sql-null? (yaml-load "--- ")))
     (test-assert
       (let ((value (yaml-load "--- .nan")))
         (not (= value value))))
     (test "1.2" (yaml-load "--- '1.2'"))
+    (test 'foo (yaml-load "--- :foo"))
   )
   (test-group "list"
     (test (list "foo" "bar") (yaml-load "--- ['foo', 'bar']"))

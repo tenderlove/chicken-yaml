@@ -7,4 +7,5 @@
  (category net)
  (doc-from-wiki)
  (test-depends test)
+ (depends sql-null)
  (files "yaml.scm" "yaml.meta" "yaml.setup" "tests/run.scm"))
