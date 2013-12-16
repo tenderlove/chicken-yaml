@@ -41,8 +41,9 @@
          (string->number (irregex-replace/all "[.]" value "")))
         (else value)))
 
-(define (yaml-load yaml)
-  (yaml-parse yaml
+; Load YAML from a string or port
+(define (yaml-load string-or-port)
+  (yaml-parse string-or-port
               (lambda (enc seed) (cons 'stream-start seed))
               (lambda (seed) seed)
               (lambda (version tags seed)
@@ -93,7 +94,7 @@
                     (alias get-alias)
                     (seed get-seed))
 
-(define (yaml-parse yaml
+(define (yaml-parse string-or-port
                     stream-start
                     stream-end
                     document-start
@@ -118,9 +119,9 @@
                            mapping-start
                            mapping-end
                            seed)))
-    (if (input-port? yaml)
-        (do-parse-input yaml ctx)
-        (do-parse yaml ctx))))
+    (if (input-port? string-or-port)
+        (do-parse-input string-or-port ctx)
+        (do-parse string-or-port ctx))))
 
 (define yaml:stream-start-event (foreign-value "YAML_STREAM_START_EVENT" int))
 (define yaml:stream-end-event (foreign-value "YAML_STREAM_END_EVENT" int))
