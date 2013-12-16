@@ -119,9 +119,14 @@
                            mapping-start
                            mapping-end
                            seed)))
-    (if (input-port? string-or-port)
-        (do-parse-input string-or-port ctx)
-        (do-parse string-or-port ctx))))
+    (let ((results (do-parse string-or-port ctx)))
+      (free-yaml-parser! parser)
+      results)))
+
+(define (do-parse string-or-port ctx)
+  (if (input-port? string-or-port)
+      (do-parse-input string-or-port ctx)
+      (do-parse-string string-or-port ctx)))
 
 (define yaml:stream-start-event (foreign-value "YAML_STREAM_START_EVENT" int))
 (define yaml:stream-end-event (foreign-value "YAML_STREAM_END_EVENT" int))
@@ -208,6 +213,7 @@
     (if (= 0 state)
         (let ((exn (make-exception parser)))
           (free-yaml-event event)
+          (free-yaml-parser! parser)
           (abort exn))
         state)))
 
@@ -255,7 +261,7 @@
 
           (else (parse-loop ctx parser event seed)))))
 
-(define (do-parse yaml ctx)
+(define (do-parse-string yaml ctx)
   (yaml_parser_set_input_string (get-context ctx)
                                 yaml
                                 (string-length yaml))
@@ -311,7 +317,7 @@ static int io_reader(void * data, unsigned char *buf, size_t size, size_t *dr)
 (define (make-yaml-parser)
   (let ((parser (allocate (foreign-type-size "yaml_parser_t"))))
     (yaml_parser_initialize parser)
-    (set-finalizer! parser free-yaml-parser!)))
+    parser))
 
 (define (free-yaml-parser! parser)
   (yaml_parser_delete parser)
