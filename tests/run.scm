@@ -1,6 +1,15 @@
-(use yaml test srfi-1 sql-null)
+(use yaml test srfi-1 sql-null posix)
 
 (test-begin "yaml")
+
+(define (call-with-read-pipe str cb)
+  (let-values (((in-fd out-fd) (create-pipe)))
+              (let ((input (open-input-file* in-fd)))
+                   (file-write out-fd str)
+                   (file-close out-fd)
+                   (let ((result (cb input)))
+                     (close-input-port input)
+                     result))))
 
 (define (yaml-exp yaml)
   (yaml-parse yaml
@@ -117,17 +126,19 @@
       (let ((value (yaml-load "--- .nan")))
         (not (= value value))))
     (test "1.2" (yaml-load "--- '1.2'"))
-    (test 'foo (yaml-load "--- :foo"))
-  )
+    (test 'foo (yaml-load "--- :foo")))
+
   (test-group "list"
     (test (list "foo" "bar") (yaml-load "--- ['foo', 'bar']"))
-    (test (list "foo" (list "bar")) (yaml-load "--- ['foo', ['bar']]"))
-  )
+    (test (list "foo" (list "bar")) (yaml-load "--- ['foo', ['bar']]")))
+
   (test-group "hash"
     (test (list (cons "foo" "bar")) (yaml-load "--- {'foo':'bar'}"))
     (test (list (list "foo" (cons "bar" "baz")))
-          (yaml-load "--- {'foo':{'bar':'baz'}}"))
-  )
+          (yaml-load "--- {'foo':{'bar':'baz'}}")))
+
+  (test-group "port"
+    (test (list "foo") (call-with-read-pipe "--- [foo]" yaml-load)))
 )
 
 (test-end)

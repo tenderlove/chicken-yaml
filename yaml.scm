@@ -5,7 +5,7 @@
   (yaml-parse yaml-load)
 
 (import scheme chicken foreign irregex)
-(use irregex srfi-13 lolevel sql-null)
+(use irregex srfi-13 lolevel sql-null posix)
 
 (foreign-declare "#include <yaml.h>")
 
@@ -118,7 +118,9 @@
                            mapping-start
                            mapping-end
                            seed)))
-    (do-parse yaml ctx)))
+    (if (input-port? yaml)
+        (do-parse-input yaml ctx)
+        (do-parse yaml ctx))))
 
 (define yaml:stream-start-event (foreign-value "YAML_STREAM_START_EVENT" int))
 (define yaml:stream-end-event (foreign-value "YAML_STREAM_END_EVENT" int))
@@ -246,12 +248,32 @@
       (free-yaml-event event)
       seed)))
 
+(define (do-parse-input yaml ctx)
+  (yaml_parser_set_input (get-context ctx)
+                         (port->fileno yaml))
+  (let ((parser (get-context ctx))
+        (event (make-yaml-event)))
+    (let ((seed (parse-loop ctx parser event (get-seed ctx))))
+      (free-yaml-event event)
+      seed)))
+
+(foreign-declare "
+static int io_reader(void * data, unsigned char *buf, size_t size, size_t *dr)
+{
+  *dr = read((int)data, buf, size);
+  return 1;
+}")
 
 (define yaml_parser_set_input_string (foreign-lambda void
                                                      "yaml_parser_set_input_string"
                                                      yaml_parser_t
                                                      nonnull-unsigned-c-string
                                                      size_t))
+
+(define yaml_parser_set_input (foreign-lambda* void
+                                               ((yaml_parser_t ctx)
+                                                (int fd))
+  "yaml_parser_set_input(ctx, io_reader, fd);"))
 
 (define (make-yaml-event) (allocate (foreign-type-size "yaml_event_t")))
 
@@ -260,7 +282,7 @@
                                           "yaml_event_delete"
                                           yaml_event_t))
 
-(define yaml_parser_parse (foreign-lambda int
+(define yaml_parser_parse (foreign-safe-lambda int
                                           "yaml_parser_parse"
                                           yaml_parser_t
                                           yaml_event_t))
