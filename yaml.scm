@@ -187,12 +187,28 @@
 (define (handle-mapping-end-event ctx event seed)
   ((get-mapping-end ctx) seed))
 
+(define (make-exception ctx)
+  (let ((line (_error-line ctx))
+        (column (_error-column ctx))
+        (problem (_error-problem ctx))
+        (context (_error-context ctx)))
+    (make-property-condition
+      'exn
+      'message (string-append
+                 problem " " context " at line "
+                 (number->string line) " column "
+                 (number->string column))
+      'line line
+      'column column
+      'problem problem
+      'context context)))
+
 (define (pull-event parser event)
   (let ((state (yaml_parser_parse parser event)))
     (if (= 0 state)
-        (begin
+        (let ((exn (make-exception parser)))
           (free-yaml-event event)
-          (error "something is broken"))
+          (abort exn))
         state)))
 
 (define (parse-loop ctx parser event seed)
@@ -428,6 +444,22 @@ static int io_reader(void * data, unsigned char *buf, size_t size, size_t *dr)
 (define yaml_parser_delete (foreign-lambda void
                                            "yaml_parser_delete"
                                             yaml_parser_t))
+
+(define _error-line (foreign-lambda* int
+                                     ((yaml_parser_t parser))
+                                     "C_return(parser->context_mark.line + 1);"))
+
+(define _error-column (foreign-lambda* int
+                                     ((yaml_parser_t parser))
+                                     "C_return(parser->context_mark.column + 1);"))
+
+(define _error-problem (foreign-lambda* c-string
+                                     ((yaml_parser_t parser))
+                                     "C_return(parser->problem);"))
+
+(define _error-context (foreign-lambda* c-string
+                                     ((yaml_parser_t parser))
+                                     "C_return(parser->context);"))
 
 (define event.type (foreign-lambda* int
   ((yaml_event_t event))

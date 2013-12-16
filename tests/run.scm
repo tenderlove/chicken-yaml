@@ -11,6 +11,12 @@
                      (close-input-port input)
                      result))))
 
+(define (yaml-exception yaml)
+  (call-with-current-continuation
+    (lambda (k)
+      (with-exception-handler (lambda (x) (k x))
+                              (lambda () (yaml-load yaml))))))
+
 (define (yaml-exp yaml)
   (yaml-parse yaml
               (lambda (enc seed) (cons (list 'stream-start enc) seed))
@@ -111,7 +117,14 @@
 (test-group "load"
   (test-group "error"
     (test-error (yaml-load "--- ["))
-  )
+    (let ((exn (yaml-exception "--- `")))
+      (test-assert (get-condition-property exn 'exn 'message))
+      (test-assert (get-condition-property exn 'exn 'problem))
+      (test-assert (get-condition-property exn 'exn 'context))
+      (test-assert (get-condition-property exn 'exn 'line))
+      (test-assert (get-condition-property exn 'exn 'column))))
+
+
   (test-group "string"
     (test "foo" (yaml-load "--- foo"))
     (test 1 (yaml-load "--- 1"))
@@ -138,8 +151,7 @@
           (yaml-load "--- {'foo':{'bar':'baz'}}")))
 
   (test-group "port"
-    (test (list "foo") (call-with-read-pipe "--- [foo]" yaml-load)))
-)
+    (test (list "foo") (call-with-read-pipe "--- [foo]" yaml-load))))
 
 (test-end)
 (test-exit)
