@@ -299,7 +299,7 @@ static int io_reader(void * data, unsigned char *buf, size_t size, size_t *dr)
                                           "yaml_event_delete"
                                           yaml_event_t))
 
-(define yaml_parser_parse (foreign-safe-lambda int
+(define yaml_parser_parse (foreign-lambda int
                                           "yaml_parser_parse"
                                           yaml_parser_t
                                           yaml_event_t))
