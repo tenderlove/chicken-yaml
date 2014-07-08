@@ -2,7 +2,7 @@
 ;;;; Bindings to libyaml
 
 (module yaml
-  (yaml-parse yaml-load make-yaml-emitter document-start)
+  (yaml-parse yaml-load make-yaml-emitter document-start document-end)
 
 (import scheme chicken foreign irregex)
 (use irregex srfi-13 lolevel sql-null posix)
@@ -24,6 +24,14 @@
           (if head (free head))
           (if version-directive (free version-directive))
           (free event))))))
+
+(define (document-end emitter implicit)
+  (let ((event (make-yaml-event)))
+    (begin
+      (yaml_document_end_event_initialize event
+                                          (if implicit 1 0))
+      (yaml_emitter_emit emitter event)
+      (free event))))
 
 (define (populate-tags tags)
   (if (<= 0 (length tags))
@@ -340,6 +348,11 @@
                                                              yaml_version_directive_t
                                                              yaml_tag_directive_t
                                                              yaml_tag_directive_t
+                                                             int))
+
+(define yaml_document_end_event_initialize (foreign-lambda int
+                                                             "yaml_document_end_event_initialize"
+                                                             yaml_event_t
                                                              int))
 
 (define yaml_event_delete (foreign-lambda void
