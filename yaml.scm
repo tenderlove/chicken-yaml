@@ -9,16 +9,21 @@
 
 (foreign-declare "#include <yaml.h>")
 
-(define (document-start version tags implicit)
+(define (document-start emitter version tags implicit)
   (let ((version-directive (populate-version version)))
     (let-values (((head tail) (populate-tags tags)))
       (let ((event (make-yaml-event)))
-        (yaml_document_start_event_initialize
-          event
-          version-directive
-          head
-          tail
-          (if implicit 1 0))))))
+        (begin
+          (yaml_document_start_event_initialize
+            event
+            version-directive
+            head
+            tail
+            (if implicit 1 0))
+          (yaml_emitter_emit emitter event)
+          (if head (free head))
+          (if version-directive (free version-directive))
+          (free event))))))
 
 (define (populate-tags tags)
   (if (<= 0 (length tags))
@@ -323,6 +328,11 @@
 (define (make-yaml-event) (allocate (foreign-type-size "yaml_event_t")))
 
 (define (free-yaml-event event) (yaml_event_delete event) (free event))
+
+(define yaml_emitter_emit (foreign-lambda int
+                                          "yaml_emitter_emit"
+                                          yaml_emitter_t
+                                          yaml_event_t))
 
 (define yaml_document_start_event_initialize (foreign-lambda int
                                                              "yaml_document_start_event_initialize"
