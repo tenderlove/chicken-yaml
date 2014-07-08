@@ -2,13 +2,20 @@
 ;;;; Bindings to libyaml
 
 (module yaml
-  (yaml-parse yaml-load)
+  (yaml-parse yaml-load make-yaml-emitter document-start)
 
 (import scheme chicken foreign irregex)
 (use irregex srfi-13 lolevel sql-null posix)
 
 (foreign-declare "#include <yaml.h>")
 
+
+(define (document-start version tags implicit)
+  (let ((version-directive (make-yaml-version-directive)))
+    (if (and (pair? version) (not (list? version)))
+        (begin
+          (set-version-directive.major version-directive (car version))
+          (set-version-directive.minor version-directive (cdr version))))))
 
 (define (sequence-end seed)
   (let loop ((the-list '()) (stack seed))
@@ -61,7 +68,9 @@
 
 (define-foreign-type yaml_parser (c-pointer "yaml_parser_t"))
 (define-foreign-type yaml_parser_t (c-pointer "yaml_parser_t"))
+(define-foreign-type yaml_emitter_t (c-pointer "yaml_emitter_t"))
 (define-foreign-type yaml_event_t (c-pointer "yaml_event_t"))
+(define-foreign-type yaml_version_directive_t (c-pointer "yaml_version_directive_t"))
 (define-foreign-type yaml_tag_directive_t (c-pointer "yaml_tag_directive_t"))
 (define sizeof_tag_directive_t (foreign-type-size "yaml_tag_directive_t"))
 
@@ -290,9 +299,13 @@
                                                    yaml_parser_t
                                                    c-pointer))
 
+(define (make-yaml-version-directive)
+  (allocate (foreign-type-size "yaml_version_directive_t")))
+
 (define (make-yaml-event) (allocate (foreign-type-size "yaml_event_t")))
 
 (define (free-yaml-event event) (yaml_event_delete event) (free event))
+
 (define yaml_event_delete (foreign-lambda void
                                           "yaml_event_delete"
                                           yaml_event_t))
@@ -306,14 +319,51 @@
                                                "yaml_parser_initialize"
                                                yaml_parser_t))
 
+(define yaml_emitter_initialize (foreign-lambda int
+                                               "yaml_emitter_initialize"
+                                               yaml_emitter_t))
+
+(define yaml_emitter_set_output_file (foreign-lambda void
+                                               "yaml_emitter_set_output_file"
+                                               yaml_emitter_t
+                                               int))
+
+(define yaml_emitter_set_unicode (foreign-lambda void
+                                               "yaml_emitter_set_unicode"
+                                               yaml_emitter_t
+                                               int))
+
+(define yaml_emitter_set_indent (foreign-lambda void
+                                               "yaml_emitter_set_indent"
+                                               yaml_emitter_t
+                                               int))
+
 (define (make-yaml-parser)
   (let ((parser (allocate (foreign-type-size "yaml_parser_t"))))
     (yaml_parser_initialize parser)
     parser))
 
+(define (make-yaml-emitter port)
+  (let ((emitter (allocate (foreign-type-size "yaml_emitter_t"))))
+    (yaml_emitter_initialize emitter)
+    (yaml_emitter_set_unicode emitter 1)
+    (yaml_emitter_set_indent emitter 2)
+    (yaml_emitter_set_output_file emitter (port->fileno port))
+    emitter))
+
 (define (free-yaml-parser! parser)
   (yaml_parser_delete parser)
   (free parser))
+
+(define set-version-directive.major (foreign-lambda* void
+  ((yaml_version_directive_t version)
+   (int v))
+  "version->major = v;"))
+
+(define set-version-directive.minor (foreign-lambda* void
+  ((yaml_version_directive_t version)
+   (int v))
+  "version->minor = v;"))
 
 (define event.data.start_stream.encoding (foreign-lambda* int
   ((yaml_event_t event))

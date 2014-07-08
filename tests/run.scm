@@ -154,5 +154,12 @@
   (test-group "port"
     (test (list "foo") (call-with-read-pipe "--- [foo]" yaml-load))))
 
+(test-group "dump"
+  (let ((emitter (make-yaml-emitter (current-output-port))))
+    (document-start emitter '(1 1) '() #f)
+    (scalar emitter "foo" #f #f #t #f 1)
+    (document-end emitter #f)))
+
+
 (test-end)
 (test-exit)
