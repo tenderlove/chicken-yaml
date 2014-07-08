@@ -9,13 +9,31 @@
 
 (foreign-declare "#include <yaml.h>")
 
-
 (define (document-start version tags implicit)
-  (let ((version-directive (make-yaml-version-directive)))
-    (if (and (pair? version) (not (list? version)))
-        (begin
-          (set-version-directive.major version-directive (car version))
-          (set-version-directive.minor version-directive (cdr version))))))
+  (let ((version-directive (populate-version version)))
+    (let-values (((head tail) (populate-tags tags)))
+      (let ((event (make-yaml-event)))
+        (yaml_document_start_event_initialize
+          event
+          version-directive
+          head
+          tail
+          (if implicit 1 0))))))
+
+(define (populate-tags tags)
+  (if (<= 0 (length tags))
+      (values #f #f)
+      (abort "not yet")))
+      ;; (let* ((head (make
+
+(define (populate-version version)
+  (if (and (pair? version) (not (list? version)))
+    (let ((version-directive (make-yaml-version-directive)))
+      (begin
+        (set-version-directive.major version-directive (car version))
+        (set-version-directive.minor version-directive (cdr version))
+        version-directive))
+    #f))
 
 (define (sequence-end seed)
   (let loop ((the-list '()) (stack seed))
@@ -305,6 +323,14 @@
 (define (make-yaml-event) (allocate (foreign-type-size "yaml_event_t")))
 
 (define (free-yaml-event event) (yaml_event_delete event) (free event))
+
+(define yaml_document_start_event_initialize (foreign-lambda int
+                                                             "yaml_document_start_event_initialize"
+                                                             yaml_event_t
+                                                             yaml_version_directive_t
+                                                             yaml_tag_directive_t
+                                                             yaml_tag_directive_t
+                                                             int))
 
 (define yaml_event_delete (foreign-lambda void
                                           "yaml_event_delete"
