@@ -2,7 +2,7 @@
 ;;;; Bindings to libyaml
 
 (module yaml
-  (yaml-parse yaml-load make-yaml-emitter document-start document-end)
+  (yaml-parse yaml-load make-yaml-emitter document-start document-end scalar)
 
 (import scheme chicken foreign irregex)
 (use irregex srfi-13 lolevel sql-null posix)
@@ -30,6 +30,26 @@
     (begin
       (yaml_document_end_event_initialize event
                                           (if implicit 1 0))
+      (yaml_emitter_emit emitter event)
+      (free event))))
+
+(define (scalar emitter
+                value
+                anchor
+                tag
+                plain
+                quoted
+                style)
+  (let ((event (make-yaml-event)))
+    (begin
+      (yaml_scalar_event_initialize event
+                                    anchor
+                                    tag
+                                    value
+                                    (string-length value)
+                                    (if plain 1 0)
+                                    (if quoted 1 0)
+                                    style)
       (yaml_emitter_emit emitter event)
       (free event))))
 
@@ -355,6 +375,16 @@
                                                              yaml_event_t
                                                              int))
 
+(define yaml_scalar_event_initialize (foreign-lambda int
+                                                     "yaml_scalar_event_initialize"
+                                                     yaml_event_t
+                                                     nonnull-unsigned-c-string
+                                                     nonnull-unsigned-c-string
+                                                     nonnull-unsigned-c-string
+                                                     int
+                                                     int
+                                                     int
+                                                     int))
 (define yaml_event_delete (foreign-lambda void
                                           "yaml_event_delete"
                                           yaml_event_t))
