@@ -199,4 +199,7 @@
                     (stream-end emitter)))))))
       (test (list (cons "foo" "bar")) (yaml-load yaml))))
 
-  (test-roundtrip "foo"))
+  (test-roundtrip "foo")
+  (test-roundtrip "1.2")
+  (test-roundtrip (list "1.2" "foo"))
+  )

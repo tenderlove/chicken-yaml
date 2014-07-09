@@ -36,16 +36,27 @@
             result)))))
 
 (define (emit-string emitter str)
-  (scalar emitter str #f #f #t #f yaml:scalar-style:any))
+  (cond ((string-index str #\n)
+         (scalar emitter str #f #f #t #t yaml:scalar-style:literal))
+        ((irregex-search '(seq bos (~ alnum)) str)
+         (scalar emitter str #f #f #t #t yaml:scalar-style:double-quoted))
+        ((not (eq? str (parse-scalar str)))
+         (scalar emitter str #f #f #t #t yaml:scalar-style:single-quoted))
+        (else
+         (scalar emitter str #f #f #t #t yaml:scalar-style:plain))))
 
 (define (walk-objects object emitter)
   (cond ((string? object) (emit-string emitter object))
+        ((list? object)
+         (sequence-start emitter #f #f #t yaml:sequence-style:any)
+         (for-each (lambda (obj) (walk-objects obj emitter)) object)
+         (sequence-end emitter))
         (else (abort "unknown"))))
 
 (define (yaml-dump-port object port)
   (with-yaml-emitter port (lambda (emitter)
                             (stream-start emitter yaml:utf8-encoding)
-                            (document-start emitter '() '() #t)
+                            (document-start emitter '() '() #f)
                             (walk-objects object emitter)
                             (document-end emitter #t)
                             (stream-end emitter))))
@@ -324,6 +335,7 @@
 (define yaml:scalar-style:plain (foreign-value "YAML_PLAIN_SCALAR_STYLE" int))
 (define yaml:scalar-style:single-quoted (foreign-value "YAML_SINGLE_QUOTED_SCALAR_STYLE" int))
 (define yaml:scalar-style:double-quoted (foreign-value "YAML_DOUBLE_QUOTED_SCALAR_STYLE" int))
+(define yaml:scalar-style:literal (foreign-value "YAML_LITERAL_SCALAR_STYLE" int))
 (define yaml:scalar-style:folded (foreign-value "YAML_FOLDED_SCALAR_STYLE" int))
 
 (define yaml:any-encoding (foreign-value "YAML_ANY_ENCODING" int))
