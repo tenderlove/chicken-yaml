@@ -164,6 +164,9 @@
   (test-group "port"
     (test (list "foo") (call-with-read-pipe "--- [foo]" yaml-load))))
 
+(define (test-roundtrip object)
+  (test object (yaml-load (yaml-dump object))))
+
 (test-group "dump"
   (test-group "events"
     (let ((yaml (call-with-write-pipe (lambda (port)
@@ -194,4 +197,6 @@
                     (mapping-end emitter)
                     (document-end emitter #t)
                     (stream-end emitter)))))))
-      (test (list (cons "foo" "bar")) (yaml-load yaml)))))
+      (test (list (cons "foo" "bar")) (yaml-load yaml))))
+
+  (test-roundtrip "foo"))

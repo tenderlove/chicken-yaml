@@ -2,7 +2,7 @@
 ;;;; Bindings to libyaml
 
 (module yaml
-  (yaml-parse yaml-load
+  (yaml-parse yaml-load yaml-dump
 
    ; event based emitting
    with-yaml-emitter document-start document-end scalar stream-start stream-end
@@ -17,11 +17,38 @@
   )
 
 (import scheme chicken foreign irregex)
-(use irregex srfi-13 lolevel sql-null posix)
+(use irregex srfi-13 lolevel sql-null posix utils)
 
 (foreign-declare "#include <yaml.h>")
 
 ;;;; Emitter
+
+(define (yaml-dump object #!optional port)
+  (if port
+      (yaml-dump-port object port)
+      (let-values (((in-fd out-fd) (create-pipe)))
+        (let ((input (open-input-file* in-fd))
+              (output (open-output-file* out-fd)))
+          (yaml-dump-port object output)
+          (close-output-port output)
+          (let ((result (read-all input)))
+            (close-input-port input)
+            result)))))
+
+(define (emit-string emitter str)
+  (scalar emitter str #f #f #t #f yaml:scalar-style:any))
+
+(define (walk-objects object emitter)
+  (cond ((string? object) (emit-string emitter object))
+        (else (abort "unknown"))))
+
+(define (yaml-dump-port object port)
+  (with-yaml-emitter port (lambda (emitter)
+                            (stream-start emitter yaml:utf8-encoding)
+                            (document-start emitter '() '() #t)
+                            (walk-objects object emitter)
+                            (document-end emitter #t)
+                            (stream-end emitter))))
 
 (define-record-type emitter-context
                     (wrap-emitter context port)
