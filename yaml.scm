@@ -272,20 +272,12 @@
       seed)))
 
 (define (do-parse-input yaml ctx)
-  (yaml_parser_set_input (get-context ctx)
-                         (port->fileno yaml))
+  (yaml_parser_set_input_file (get-context ctx) yaml)
   (let ((parser (get-context ctx))
         (event (make-yaml-event)))
     (let ((seed (parse-loop ctx parser event (get-seed ctx))))
       (free-yaml-event event)
       seed)))
-
-(foreign-declare "
-static int io_reader(void * data, unsigned char *buf, size_t size, size_t *dr)
-{
-  *dr = read((int)data, buf, size);
-  return 1;
-}")
 
 (define yaml_parser_set_input_string (foreign-lambda void
                                                      "yaml_parser_set_input_string"
@@ -293,10 +285,10 @@ static int io_reader(void * data, unsigned char *buf, size_t size, size_t *dr)
                                                      nonnull-unsigned-c-string
                                                      size_t))
 
-(define yaml_parser_set_input (foreign-lambda* void
-                                               ((yaml_parser_t ctx)
-                                                (int fd))
-  "yaml_parser_set_input(ctx, io_reader, fd);"))
+(define yaml_parser_set_input_file (foreign-lambda void
+                                                   "yaml_parser_set_input_file"
+                                                   yaml_parser_t
+                                                   c-pointer))
 
 (define (make-yaml-event) (allocate (foreign-type-size "yaml_event_t")))
 

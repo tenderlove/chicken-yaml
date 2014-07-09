@@ -4,9 +4,10 @@
 
 (define (call-with-read-pipe str cb)
   (let-values (((in-fd out-fd) (create-pipe)))
-              (let ((input (open-input-file* in-fd)))
-                   (file-write out-fd str)
-                   (file-close out-fd)
+              (let ((input (open-input-file* in-fd))
+                    (output (open-output-file* out-fd)))
+                   (with-output-to-port output (lambda () (write-string str)))
+                   (close-output-port output)
                    (let ((result (cb input)))
                      (close-input-port input)
                      result))))
