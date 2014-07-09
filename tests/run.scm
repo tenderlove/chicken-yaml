@@ -155,11 +155,9 @@
     (test (list "foo") (call-with-read-pipe "--- [foo]" yaml-load))))
 
 (test-group "dump"
-  (let ((emitter (make-yaml-emitter (current-output-port))))
-    (document-start emitter '(1 1) '() #f)
-    (scalar emitter "foo" #f #f #t #f 1)
-    (document-end emitter #f)))
-
-
-(test-end)
-(test-exit)
+  (with-yaml-emitter (current-output-port) (lambda (emitter)
+    (stream-start emitter yaml:utf8-encoding)
+    (document-start emitter (cons 1 1) '() #f)
+    (emit-scalar emitter "zomglolwut" #f #f #t #f 1)
+    (document-end emitter #t)
+    (stream-end emitter))))

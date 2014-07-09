@@ -2,62 +2,107 @@
 ;;;; Bindings to libyaml
 
 (module yaml
-  (yaml-parse yaml-load make-yaml-emitter document-start document-end scalar)
+  (yaml-parse yaml-load with-yaml-emitter document-start document-end emit-scalar
+   stream-start stream-end yaml:utf8-encoding)
 
 (import scheme chicken foreign irregex)
 (use irregex srfi-13 lolevel sql-null posix)
 
 (foreign-declare "#include <yaml.h>")
 
+;;;; Emitter
+
+(define (with-yaml-emitter port cb)
+  (let ((emitter (make-yaml-emitter port)))
+    (cb emitter)
+    (free-emitter emitter)))
+
+(define (make-yaml-emitter port)
+  (let ((emitter (allocate (foreign-type-size "yaml_emitter_t"))))
+    (yaml_emitter_initialize emitter)
+    (yaml_emitter_set_unicode emitter 1)
+    (yaml_emitter_set_indent emitter 2)
+    (yaml_emitter_set_output_file emitter port)
+    emitter))
+
+(define (emit-event emitter cb)
+  (let ((event (make-yaml-event)))
+    (if (= 0 (cb event))
+      (begin
+        (free event)
+        (free-emitter emitter)
+        (abort "event initialization error"))
+      (let ((state (yaml_emitter_emit emitter event)))
+        (if (= 0 state)
+            (let ((exn (make-emit-exception emitter)))
+              (free event)
+              (free-emitter emitter)
+              (abort exn))
+            emitter)))))
+
+(define (make-emit-exception emitter)
+  (let ((message (emitter->problem emitter)))
+    (make-property-condition 'exn 'message message)))
+
+(define (free-emitter emitter)
+  (yaml_emitter_delete emitter)
+  (free emitter))
+
+(define (stream-start emitter encoding)
+  (emit-event emitter (lambda (event)
+    (yaml_stream_start_event_initialize event encoding))))
+
+(define (stream-end emitter)
+  (let ((event (make-yaml-event)))
+    (begin
+      (yaml_stream_end_event_initialize event)
+      (yaml_emitter_emit emitter event)
+      (free event))))
+
 (define (document-start emitter version tags implicit)
   (let ((version-directive (populate-version version)))
     (let-values (((head tail) (populate-tags tags)))
       (let ((event (make-yaml-event)))
-        (begin
-          (yaml_document_start_event_initialize
-            event
-            version-directive
-            head
-            tail
-            (if implicit 1 0))
-          (yaml_emitter_emit emitter event)
-          (if head (free head))
-          (if version-directive (free version-directive))
-          (free event))))))
+        (if (= 0 (yaml_document_start_event_initialize
+          event
+          version-directive
+          head
+          tail
+          (if implicit 1 0)))
+          (abort "nooo-document"))
+        (if (= 0 (yaml_emitter_emit emitter event))
+            (abort "wtf!!!!!!!"))
+        (if head (free head))
+        (if version-directive (free version-directive))
+        (free event)
+        ))))
 
 (define (document-end emitter implicit)
-  (let ((event (make-yaml-event)))
-    (begin
-      (yaml_document_end_event_initialize event
-                                          (if implicit 1 0))
-      (yaml_emitter_emit emitter event)
-      (free event))))
+  (emit-event emitter (lambda (event)
+    (yaml_document_end_event_initialize event
+                                        (if implicit 1 0)))))
 
-(define (scalar emitter
+(define (emit-scalar emitter
                 value
                 anchor
                 tag
                 plain
                 quoted
                 style)
-  (let ((event (make-yaml-event)))
-    (begin
-      (yaml_scalar_event_initialize event
-                                    anchor
-                                    tag
-                                    value
-                                    (string-length value)
-                                    (if plain 1 0)
-                                    (if quoted 1 0)
-                                    style)
-      (yaml_emitter_emit emitter event)
-      (free event))))
+  (emit-event emitter (lambda (event)
+    (yaml_scalar_event_initialize event
+                                  anchor
+                                  tag
+                                  value
+                                  (string-length value)
+                                  (if plain 1 0)
+                                  (if quoted 1 0)
+                                  style))))
 
 (define (populate-tags tags)
   (if (<= 0 (length tags))
       (values #f #f)
       (abort "not yet")))
-      ;; (let* ((head (make
 
 (define (populate-version version)
   (if (and (pair? version) (not (list? version)))
@@ -67,6 +112,8 @@
         (set-version-directive.minor version-directive (cdr version))
         version-directive))
     #f))
+
+;;;; Parser
 
 (define (sequence-end seed)
   (let loop ((the-list '()) (stack seed))
@@ -188,6 +235,8 @@
       (do-parse-input string-or-port ctx)
       (do-parse-string string-or-port ctx)))
 
+(define yaml:any-encoding (foreign-value "YAML_ANY_ENCODING" int))
+(define yaml:utf8-encoding (foreign-value "YAML_UTF8_ENCODING" int))
 (define yaml:stream-start-event (foreign-value "YAML_STREAM_START_EVENT" int))
 (define yaml:stream-end-event (foreign-value "YAML_STREAM_END_EVENT" int))
 (define yaml:document-start-event (foreign-value "YAML_DOCUMENT_START_EVENT" int))
@@ -357,6 +406,10 @@
 
 (define (free-yaml-event event) (yaml_event_delete event) (free event))
 
+(define yaml_emitter_delete (foreign-lambda void
+                                            "yaml_emitter_delete"
+                                            yaml_emitter_t))
+
 (define yaml_emitter_emit (foreign-lambda int
                                           "yaml_emitter_emit"
                                           yaml_emitter_t
@@ -375,11 +428,20 @@
                                                              yaml_event_t
                                                              int))
 
+(define yaml_stream_start_event_initialize (foreign-lambda int
+                                                           "yaml_stream_start_event_initialize"
+                                                           yaml_event_t
+                                                           int))
+
+(define yaml_stream_end_event_initialize (foreign-lambda int
+                                                         "yaml_stream_end_event_initialize"
+                                                         yaml_event_t))
+
 (define yaml_scalar_event_initialize (foreign-lambda int
                                                      "yaml_scalar_event_initialize"
                                                      yaml_event_t
-                                                     nonnull-unsigned-c-string
-                                                     nonnull-unsigned-c-string
+                                                     unsigned-c-string
+                                                     unsigned-c-string
                                                      nonnull-unsigned-c-string
                                                      int
                                                      int
@@ -405,7 +467,7 @@
 (define yaml_emitter_set_output_file (foreign-lambda void
                                                "yaml_emitter_set_output_file"
                                                yaml_emitter_t
-                                               int))
+                                               c-pointer))
 
 (define yaml_emitter_set_unicode (foreign-lambda void
                                                "yaml_emitter_set_unicode"
@@ -421,14 +483,6 @@
   (let ((parser (allocate (foreign-type-size "yaml_parser_t"))))
     (yaml_parser_initialize parser)
     parser))
-
-(define (make-yaml-emitter port)
-  (let ((emitter (allocate (foreign-type-size "yaml_emitter_t"))))
-    (yaml_emitter_initialize emitter)
-    (yaml_emitter_set_unicode emitter 1)
-    (yaml_emitter_set_indent emitter 2)
-    (yaml_emitter_set_output_file emitter (port->fileno port))
-    emitter))
 
 (define (free-yaml-parser! parser)
   (yaml_parser_delete parser)
@@ -579,6 +633,10 @@
 (define _error-column (foreign-lambda* int
                                      ((yaml_parser_t parser))
                                      "C_return(parser->context_mark.column + 1);"))
+
+(define emitter->problem (foreign-lambda* c-string
+                                          ((yaml_emitter_t emitter))
+                                          "C_return(emitter->problem);"))
 
 (define _error-problem (foreign-lambda* c-string
                                      ((yaml_parser_t parser))
