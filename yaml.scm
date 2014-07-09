@@ -4,7 +4,14 @@
 (module yaml
   (yaml-parse yaml-load with-yaml-emitter document-start document-end scalar
    stream-start stream-end sequence-start sequence-end mapping-start mapping-end
-   yaml:utf8-encoding)
+
+   ; constants
+   yaml:utf8-encoding yaml:mapping-style:any yaml:mapping-style:block
+   yaml:mapping-style:flow yaml:sequence-style:any yaml:sequence-style:block
+   yaml:sequence-style:flow yaml:scalar-style:any yaml:scalar-style:plain
+   yaml:scalar-style:single-quoted yaml:scalar-style:double-quoted
+   yaml:scalar-style:folded
+  )
 
 (import scheme chicken foreign irregex)
 (use irregex srfi-13 lolevel sql-null posix)
@@ -263,6 +270,20 @@
   (if (input-port? string-or-port)
       (do-parse-input string-or-port ctx)
       (do-parse-string string-or-port ctx)))
+
+(define yaml:mapping-style:any (foreign-value "YAML_ANY_MAPPING_STYLE" int))
+(define yaml:mapping-style:block (foreign-value "YAML_BLOCK_MAPPING_STYLE" int))
+(define yaml:mapping-style:flow (foreign-value "YAML_FLOW_MAPPING_STYLE" int))
+
+(define yaml:sequence-style:any (foreign-value "YAML_ANY_SEQUENCE_STYLE" int))
+(define yaml:sequence-style:block (foreign-value "YAML_BLOCK_SEQUENCE_STYLE" int))
+(define yaml:sequence-style:flow (foreign-value "YAML_FLOW_SEQUENCE_STYLE" int))
+
+(define yaml:scalar-style:any (foreign-value "YAML_ANY_SCALAR_STYLE" int))
+(define yaml:scalar-style:plain (foreign-value "YAML_PLAIN_SCALAR_STYLE" int))
+(define yaml:scalar-style:single-quoted (foreign-value "YAML_SINGLE_QUOTED_SCALAR_STYLE" int))
+(define yaml:scalar-style:double-quoted (foreign-value "YAML_DOUBLE_QUOTED_SCALAR_STYLE" int))
+(define yaml:scalar-style:folded (foreign-value "YAML_FOLDED_SCALAR_STYLE" int))
 
 (define yaml:any-encoding (foreign-value "YAML_ANY_ENCODING" int))
 (define yaml:utf8-encoding (foreign-value "YAML_UTF8_ENCODING" int))
