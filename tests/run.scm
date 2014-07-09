@@ -12,6 +12,16 @@
                      (close-input-port input)
                      result))))
 
+(define (call-with-write-pipe cb)
+  (let-values (((in-fd out-fd) (create-pipe)))
+              (let ((output (open-output-file* out-fd)))
+                   (cb output)
+                   (close-output-port output)
+                   (let* ((input (open-input-file* in-fd))
+                          (str (read-all input)))
+                     (close-input-port input)
+                     str))))
+
 (define (yaml-exception yaml)
   (call-with-current-continuation
     (lambda (k)
@@ -155,9 +165,12 @@
     (test (list "foo") (call-with-read-pipe "--- [foo]" yaml-load))))
 
 (test-group "dump"
-  (with-yaml-emitter (current-output-port) (lambda (emitter)
-    (stream-start emitter yaml:utf8-encoding)
-    (document-start emitter (cons 1 1) '() #f)
-    (emit-scalar emitter "zomglolwut" #f #f #t #f 1)
-    (document-end emitter #t)
-    (stream-end emitter))))
+  (test-group "events"
+    (let ((yaml (call-with-write-pipe (lambda (port)
+                  (with-yaml-emitter port (lambda (emitter)
+                    (stream-start emitter yaml:utf8-encoding)
+                    (document-start emitter (cons 1 1) '() #f)
+                    (emit-scalar emitter "foo" #f #f #t #f 1)
+                    (document-end emitter #t)
+                    (stream-end emitter)))))))
+      (test "foo" (yaml-load yaml)))))
