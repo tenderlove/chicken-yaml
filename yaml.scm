@@ -2,9 +2,11 @@
 ;;;; Bindings to libyaml
 
 (module yaml
-  (yaml-parse yaml-load with-yaml-emitter document-start document-end scalar
-   stream-start stream-end sequence-start sequence-end mapping-start mapping-end
-   alias
+  (yaml-parse yaml-load
+
+   ; event based emitting
+   with-yaml-emitter document-start document-end scalar stream-start stream-end
+   sequence-start sequence-end mapping-start mapping-end alias
 
    ; constants
    yaml:utf8-encoding yaml:mapping-style:any yaml:mapping-style:block
@@ -77,18 +79,25 @@
     (let-values (((head tail) (populate-tags tags)))
       (let ((event (make-yaml-event)))
         (if (= 0 (yaml_document_start_event_initialize
-          event
-          version-directive
-          head
-          tail
-          (if implicit 1 0)))
-          (abort "nooo-document"))
-        (if (= 0 (yaml_emitter_emit (get-emitter emitter) event))
-            (abort "wtf!!!!!!!"))
-        (if head (free head))
-        (if version-directive (free version-directive))
-        (free event)
-        ))))
+                   event
+                   version-directive
+                   head
+                   tail
+                   (if implicit 1 0)))
+            (begin
+              (free event)
+              (free-emitter emitter)
+              (abort "error initializing document"))
+            (if (= 0 (yaml_emitter_emit (get-emitter emitter) event))
+                (let ((exn (make-emit-exception emitter)))
+                  (free event)
+                  (free-emitter emitter)
+                  (abort emitter))
+                (begin
+                  (if head (free head))
+                  (if version-directive (free version-directive))
+                  (free event)
+                  emitter)))))))
 
 (define (document-end emitter implicit)
   (emit-event emitter (lambda (event)
