@@ -4,6 +4,7 @@
 (module yaml
   (yaml-parse yaml-load with-yaml-emitter document-start document-end scalar
    stream-start stream-end sequence-start sequence-end mapping-start mapping-end
+   alias
 
    ; constants
    yaml:utf8-encoding yaml:mapping-style:any yaml:mapping-style:block
@@ -134,6 +135,10 @@
 (define (mapping-end emitter)
   (emit-event emitter (lambda (event)
     (yaml_mapping_end_event_initialize event))))
+
+(define (alias emitter anchor)
+  (emit-event emitter (lambda (event)
+    (yaml_alias_event_initialize event anchor))))
 
 (define (populate-tags tags)
   (if (<= 0 (length tags))
@@ -521,6 +526,12 @@
 (define yaml_mapping_end_event_initialize (foreign-lambda int
                                                            "yaml_mapping_end_event_initialize"
                                                            yaml_event_t))
+
+
+(define yaml_alias_event_initialize (foreign-lambda int
+                                                    "yaml_alias_event_initialize"
+                                                    yaml_event_t
+                                                    nonnull-unsigned-c-string))
 
 (define yaml_event_delete (foreign-lambda void
                                           "yaml_event_delete"
