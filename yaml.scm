@@ -3,7 +3,8 @@
 
 (module yaml
   (yaml-parse yaml-load with-yaml-emitter document-start document-end scalar
-   stream-start stream-end sequence-start sequence-end yaml:utf8-encoding)
+   stream-start stream-end sequence-start sequence-end mapping-start mapping-end
+   yaml:utf8-encoding)
 
 (import scheme chicken foreign irregex)
 (use irregex srfi-13 lolevel sql-null posix)
@@ -115,6 +116,18 @@
   (emit-event emitter (lambda (event)
     (yaml_sequence_end_event_initialize event))))
 
+(define (mapping-start emitter anchor tag implicit style)
+  (emit-event emitter (lambda (event)
+    (yaml_mapping_start_event_initialize event
+                                          anchor
+                                          tag
+                                          (if implicit 1 0)
+                                          style))))
+
+(define (mapping-end emitter)
+  (emit-event emitter (lambda (event)
+    (yaml_mapping_end_event_initialize event))))
+
 (define (populate-tags tags)
   (if (<= 0 (length tags))
       (values #f #f)
@@ -137,7 +150,7 @@
       (cons the-list (cdr stack))
       (loop (cons (car stack) the-list) (cdr stack)))))
 
-(define (mapping-end seed)
+(define (parser-mapping-end seed)
   (let loop ((the-list '()) (stack seed))
     (if (eq? 'mapping-start (car stack))
         (cons the-list (cdr stack))
@@ -177,7 +190,7 @@
               parser-sequence-end
               (lambda (anchor tag implicit style seed)
                       (cons 'mapping-start seed))
-              mapping-end
+              parser-mapping-end
               '()))
 
 (define-foreign-type yaml_parser (c-pointer "yaml_parser_t"))
@@ -474,6 +487,18 @@
 
 (define yaml_sequence_end_event_initialize (foreign-lambda int
                                                            "yaml_sequence_end_event_initialize"
+                                                           yaml_event_t))
+
+(define yaml_mapping_start_event_initialize (foreign-lambda int
+                                                             "yaml_mapping_start_event_initialize"
+                                                             yaml_event_t
+                                                             unsigned-c-string
+                                                             unsigned-c-string
+                                                             int
+                                                             int))
+
+(define yaml_mapping_end_event_initialize (foreign-lambda int
+                                                           "yaml_mapping_end_event_initialize"
                                                            yaml_event_t))
 
 (define yaml_event_delete (foreign-lambda void
