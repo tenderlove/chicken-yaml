@@ -12,6 +12,11 @@
 
 ;;;; Emitter
 
+(define-record-type emitter-context
+                    (wrap-emitter context port)
+                    emitter-context?
+                    (context get-emitter))
+
 (define (with-yaml-emitter port cb)
   (let ((emitter (make-yaml-emitter port)))
     (cb emitter)
@@ -23,41 +28,40 @@
     (yaml_emitter_set_unicode emitter 1)
     (yaml_emitter_set_indent emitter 2)
     (yaml_emitter_set_output_file emitter port)
-    emitter))
+    (wrap-emitter emitter port)))
 
-(define (emit-event emitter cb)
-  (let ((event (make-yaml-event)))
-    (if (= 0 (cb event))
-      (begin
-        (free event)
-        (free-emitter emitter)
-        (abort "event initialization error"))
-      (let ((state (yaml_emitter_emit emitter event)))
-        (if (= 0 state)
-            (let ((exn (make-emit-exception emitter)))
-              (free event)
-              (free-emitter emitter)
-              (abort exn))
-            emitter)))))
+(define (emit-event emitter-ctx cb)
+  (let ((emitter (get-emitter emitter-ctx)))
+    (let ((event (make-yaml-event)))
+      (if (= 0 (cb event))
+        (begin
+          (free event)
+          (free-emitter emitter)
+          (abort "event initialization error"))
+        (let ((state (yaml_emitter_emit emitter event)))
+          (if (= 0 state)
+              (let ((exn (make-emit-exception emitter)))
+                (free event)
+                (free-emitter emitter)
+                (abort exn))
+              emitter))))))
 
 (define (make-emit-exception emitter)
   (let ((message (emitter->problem emitter)))
     (make-property-condition 'exn 'message message)))
 
-(define (free-emitter emitter)
-  (yaml_emitter_delete emitter)
-  (free emitter))
+(define (free-emitter emitter-ctx)
+  (let ((emitter (get-emitter emitter-ctx)))
+    (yaml_emitter_delete emitter)
+    (free emitter)))
 
 (define (stream-start emitter encoding)
   (emit-event emitter (lambda (event)
     (yaml_stream_start_event_initialize event encoding))))
 
 (define (stream-end emitter)
-  (let ((event (make-yaml-event)))
-    (begin
-      (yaml_stream_end_event_initialize event)
-      (yaml_emitter_emit emitter event)
-      (free event))))
+  (emit-event emitter (lambda (event)
+                        (yaml_stream_end_event_initialize event))))
 
 (define (document-start emitter version tags implicit)
   (let ((version-directive (populate-version version)))
@@ -70,7 +74,7 @@
           tail
           (if implicit 1 0)))
           (abort "nooo-document"))
-        (if (= 0 (yaml_emitter_emit emitter event))
+        (if (= 0 (yaml_emitter_emit (get-emitter emitter) event))
             (abort "wtf!!!!!!!"))
         (if head (free head))
         (if version-directive (free version-directive))
