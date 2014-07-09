@@ -2,8 +2,8 @@
 ;;;; Bindings to libyaml
 
 (module yaml
-  (yaml-parse yaml-load with-yaml-emitter document-start document-end emit-scalar
-   stream-start stream-end yaml:utf8-encoding)
+  (yaml-parse yaml-load with-yaml-emitter document-start document-end scalar
+   stream-start stream-end sequence-start sequence-end yaml:utf8-encoding)
 
 (import scheme chicken foreign irregex)
 (use irregex srfi-13 lolevel sql-null posix)
@@ -86,7 +86,7 @@
     (yaml_document_end_event_initialize event
                                         (if implicit 1 0)))))
 
-(define (emit-scalar emitter
+(define (scalar emitter
                 value
                 anchor
                 tag
@@ -102,6 +102,18 @@
                                   (if plain 1 0)
                                   (if quoted 1 0)
                                   style))))
+
+(define (sequence-start emitter anchor tag implicit style)
+  (emit-event emitter (lambda (event)
+    (yaml_sequence_start_event_initialize event
+                                          anchor
+                                          tag
+                                          (if implicit 1 0)
+                                          style))))
+
+(define (sequence-end emitter)
+  (emit-event emitter (lambda (event)
+    (yaml_sequence_end_event_initialize event))))
 
 (define (populate-tags tags)
   (if (<= 0 (length tags))
@@ -119,7 +131,7 @@
 
 ;;;; Parser
 
-(define (sequence-end seed)
+(define (parser-sequence-end seed)
   (let loop ((the-list '()) (stack seed))
     (if (eq? 'sequence-start (car stack))
       (cons the-list (cdr stack))
@@ -131,7 +143,7 @@
         (cons the-list (cdr stack))
         (loop (cons (cons (cadr stack) (car stack)) the-list) (cddr stack)))))
 
-(define (scalar value anchor tag plain quoted style seed)
+(define (parser-scalar value anchor tag plain quoted style seed)
   (if quoted
       (cons value seed)
       (cons (parse-scalar value) seed)))
@@ -159,10 +171,10 @@
                       (cons 'document-start seed))
               (lambda (implicit? seed) (car seed))
               (lambda (alias seed) seed)
-              scalar
+              parser-scalar
               (lambda (anchor tag implicit style seed)
                       (cons 'sequence-start seed))
-              sequence-end
+              parser-sequence-end
               (lambda (anchor tag implicit style seed)
                       (cons 'mapping-start seed))
               mapping-end
@@ -451,6 +463,19 @@
                                                      int
                                                      int
                                                      int))
+
+(define yaml_sequence_start_event_initialize (foreign-lambda int
+                                                             "yaml_sequence_start_event_initialize"
+                                                             yaml_event_t
+                                                             unsigned-c-string
+                                                             unsigned-c-string
+                                                             int
+                                                             int))
+
+(define yaml_sequence_end_event_initialize (foreign-lambda int
+                                                           "yaml_sequence_end_event_initialize"
+                                                           yaml_event_t))
+
 (define yaml_event_delete (foreign-lambda void
                                           "yaml_event_delete"
                                           yaml_event_t))
