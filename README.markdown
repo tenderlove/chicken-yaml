@@ -1,12 +1,15 @@
 # A YAML parser for Chicken
 
-This wraps libyaml and exposes it to Chicken.  It exposes two functions:
+This wraps libyaml and exposes it to Chicken.  It exposes a few functions.
+These are the main 3:
 
 * yaml-load
 * yaml-parse
+* yaml-dump
 
-The former loads a YAML document and translates it to a scheme data structure,
-and the latter calls callbacks on each YAML event.
+The first loads a YAML document and translates it to a scheme data structure,
+the second calls callbacks on each YAML event, and the third dumps a scheme
+structure to yaml.
 
 ## Loading Whole Documents
 
@@ -77,4 +80,34 @@ You can use the seed to gather a list of events like so:
               '()))
 
 (print (yaml-exp "--- { }"))
+```
+
+## Dumping structures
+
+### Dumping to a string
+
+You can dump whole structures to a string like this:
+
+```scheme
+#;1> (use yaml)
+#;2> (print (yaml-dump (list "foo" "bar" (list (cons "baz" "omg")))))
+---
+- foo
+- bar
+- baz: omg
+
+#;3>
+```
+
+### Dumping to a port
+
+Or you can dump structures to a port:
+
+```scheme
+#;1> (use yaml)
+#;2> (yaml-dump (list "foo" "bar" (list (cons "baz" "omg"))) (current-output-port))
+---
+- foo
+- bar
+- baz: omg
 ```
