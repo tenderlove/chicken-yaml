@@ -49,7 +49,8 @@
   (cond ((string? object) (emit-string emitter object))
         ((list? object)
          (if (and (not (null? object))
-                  (pair? (car object)))
+                  (pair? (car object))
+                  (not (list? (car object))))
              (begin
                (mapping-start emitter #f #f #t yaml:sequence-style:any)
                (for-each (lambda (pair)
