@@ -48,9 +48,18 @@
 (define (walk-objects object emitter)
   (cond ((string? object) (emit-string emitter object))
         ((list? object)
-         (sequence-start emitter #f #f #t yaml:sequence-style:any)
-         (for-each (lambda (obj) (walk-objects obj emitter)) object)
-         (sequence-end emitter))
+         (if (and (not (null? object))
+                  (pair? (car object)))
+             (begin
+               (mapping-start emitter #f #f #t yaml:sequence-style:any)
+               (for-each (lambda (pair)
+                           (walk-objects (car pair) emitter)
+                           (walk-objects (cdr pair) emitter)) object)
+               (mapping-end emitter))
+             (begin
+               (sequence-start emitter #f #f #t yaml:sequence-style:any)
+               (for-each (lambda (obj) (walk-objects obj emitter)) object)
+               (sequence-end emitter))))
         (else (abort "unknown"))))
 
 (define (yaml-dump-port object port)

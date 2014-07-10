@@ -202,4 +202,6 @@
   (test-roundtrip "foo")
   (test-roundtrip "1.2")
   (test-roundtrip (list "1.2" "foo"))
+  (test-roundtrip '())
+  (test-roundtrip (list (cons "foo" "bar") (cons "baz" "omg")))
   )
