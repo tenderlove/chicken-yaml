@@ -70,6 +70,10 @@
                (scalar emitter (string-append ":" str) #f #f #t #f yaml:scalar-style:any))))
         ((number? object)
          (scalar emitter (number->string object) #f #f #t #f yaml:scalar-style:any))
+        ((boolean? object)
+         (if object
+             (scalar emitter "true" #f #f #t #f yaml:scalar-style:any)
+             (scalar emitter "false" #f #f #t #f yaml:scalar-style:any)))
         (else (abort "unknown"))))
 
 (define (yaml-dump-port object port)
@@ -253,6 +257,8 @@
          (string->number (irregex-replace/all "[.]" value "")))
         ((irregex-match "[-+]?.(?:nan|NaN|NAN)" value)
          (string->number (irregex-replace/all "[.]" value "")))
+        ((irregex-match '(w/nocase (or "yes" "true" "on")) value) #t)
+        ((irregex-match '(w/nocase (or "no" "false" "off")) value) #f)
         (else value)))
 
 ; Load YAML from a string or port
