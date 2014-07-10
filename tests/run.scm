@@ -207,4 +207,6 @@
   (test-roundtrip (list (list "foo") "o" "m"))
   (test-roundtrip (sql-null))
   (test-roundtrip (list 'foo))
+  (test-roundtrip (list (string->symbol "")))
+  (test-roundtrip (string->symbol ""))
   )

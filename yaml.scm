@@ -64,8 +64,10 @@
         ((sql-null? object)
          (scalar emitter "" #f "tag:yaml.org,2002:null" #t #f yaml:scalar-style:any))
         ((symbol? object)
-         (let ((str (string-append ":" (symbol->string object))))
-           (scalar emitter str #f #f #t #f yaml:scalar-style:any)))
+         (let ((str (symbol->string object)))
+           (if (= 0 (string-length str))
+               (scalar emitter "" #f "!scheme/symbol" #f #f yaml:scalar-style:any)
+               (scalar emitter (string-append ":" str) #f #f #t #f yaml:scalar-style:any))))
         (else (abort "unknown"))))
 
 (define (yaml-dump-port object port)
@@ -231,9 +233,11 @@
         (loop (cons (cons (cadr stack) (car stack)) the-list) (cddr stack)))))
 
 (define (parser-scalar value anchor tag plain quoted style seed)
-  (if quoted
-      (cons value seed)
-      (cons (parse-scalar value) seed)))
+  (if (equal? "!scheme/symbol" tag)
+      (cons (string->symbol (irregex-replace "^:" value)) seed)
+      (if quoted
+          (cons value seed)
+          (cons (parse-scalar value) seed))))
 
 (define (parse-scalar value)
   (cond ((string-null? value) (sql-null))
