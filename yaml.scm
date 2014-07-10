@@ -63,6 +63,9 @@
                (sequence-end emitter))))
         ((sql-null? object)
          (scalar emitter "" #f "tag:yaml.org,2002:null" #t #f yaml:scalar-style:any))
+        ((symbol? object)
+         (let ((str (string-append ":" (symbol->string object))))
+           (scalar emitter str #f #f #t #f yaml:scalar-style:any)))
         (else (abort "unknown"))))
 
 (define (yaml-dump-port object port)
