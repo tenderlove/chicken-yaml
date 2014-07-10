@@ -209,4 +209,6 @@
   (test-roundtrip (list 'foo))
   (test-roundtrip (list (string->symbol "")))
   (test-roundtrip (string->symbol ""))
+  (test-roundtrip 1.2)
+  (test-roundtrip 12)
   )

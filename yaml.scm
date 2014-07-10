@@ -68,6 +68,8 @@
            (if (= 0 (string-length str))
                (scalar emitter "" #f "!scheme/symbol" #f #f yaml:scalar-style:any)
                (scalar emitter (string-append ":" str) #f #f #t #f yaml:scalar-style:any))))
+        ((number? object)
+         (scalar emitter (number->string object) #f #f #t #f yaml:scalar-style:any))
         (else (abort "unknown"))))
 
 (define (yaml-dump-port object port)
