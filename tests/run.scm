@@ -205,4 +205,5 @@
   (test-roundtrip '())
   (test-roundtrip (list (cons "foo" "bar") (cons "baz" "omg")))
   (test-roundtrip (list (list "foo") "o" "m"))
+  (test-roundtrip (sql-null))
   )

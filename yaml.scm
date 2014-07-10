@@ -61,6 +61,8 @@
                (sequence-start emitter #f #f #t yaml:sequence-style:any)
                (for-each (lambda (obj) (walk-objects obj emitter)) object)
                (sequence-end emitter))))
+        ((sql-null? object)
+         (scalar emitter "" #f "tag:yaml.org,2002:null" #t #f yaml:scalar-style:any))
         (else (abort "unknown"))))
 
 (define (yaml-dump-port object port)
