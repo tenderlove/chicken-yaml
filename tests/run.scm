@@ -161,10 +161,16 @@
     (test 'foo (yaml-load "--- :foo")))
 
   (test-group "list"
+    (let* ((l '())
+           (lst (list l l)))
+      (test lst (yaml-load "---\n- &1 []\n- *1\n")))
     (test (list "foo" "bar") (yaml-load "--- ['foo', 'bar']"))
     (test (list "foo" (list "bar")) (yaml-load "--- ['foo', ['bar']]")))
 
   (test-group "hash"
+    (let* ((h (list (cons "a" "b")))
+           (lst (list h h)))
+      (test lst (yaml-load "---\n- &1 {a: b}\n- *1\n")))
     (test (list (cons "foo" "bar")) (yaml-load "--- {'foo':'bar'}"))
     (test (list (list "foo" (cons "bar" "baz")))
           (yaml-load "--- {'foo':{'bar':'baz'}}")))

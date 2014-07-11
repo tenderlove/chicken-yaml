@@ -17,7 +17,7 @@
   )
 
 (import scheme chicken foreign irregex)
-(use irregex srfi-13 lolevel sql-null posix utils)
+(use irregex srfi-13 srfi-69 lolevel sql-null posix utils)
 
 (foreign-declare "#include <yaml.h>")
 
@@ -228,14 +228,24 @@
 
 (define (parser-sequence-end seed)
   (let loop ((the-list '()) (stack seed))
-    (if (eq? 'sequence-start (car stack))
-      (cons the-list (cdr stack))
+    (if (start-sequence-ctx? (car stack))
+      (let* ((ctx (car stack))
+             (anchor (get-sequence-anchor ctx))
+             (anchors (get-sequence-anchors ctx))
+             (result (cons the-list (cdr stack))))
+        (if anchor (hash-table-set! anchors anchor the-list))
+        result)
       (loop (cons (car stack) the-list) (cdr stack)))))
 
 (define (parser-mapping-end seed)
   (let loop ((the-list '()) (stack seed))
-    (if (eq? 'mapping-start (car stack))
-        (cons the-list (cdr stack))
+    (if (start-mapping-ctx? (car stack))
+      (let* ((ctx (car stack))
+             (anchor (get-mapping-anchor ctx))
+             (anchors (get-mapping-anchors ctx))
+             (result (cons the-list (cdr stack))))
+        (if anchor (hash-table-set! anchors anchor the-list))
+        result)
         (loop (cons (cons (cadr stack) (car stack)) the-list) (cddr stack)))))
 
 (define (parser-scalar value anchor tag plain quoted style seed)
@@ -261,23 +271,39 @@
         ((irregex-match '(w/nocase (or "no" "false" "off")) value) #f)
         (else value)))
 
+(define-record-type start-mapping-ctx
+                    (wrap-start-mapping-ctx anchor anchors)
+                    start-mapping-ctx?
+                    (anchor get-mapping-anchor)
+                    (anchors get-mapping-anchors))
+
+(define-record-type start-sequence-ctx
+                    (wrap-start-sequence-ctx anchor anchors)
+                    start-sequence-ctx?
+                    (anchor get-sequence-anchor)
+                    (anchors get-sequence-anchors))
+
 ; Load YAML from a string or port
 (define (yaml-load string-or-port)
-  (yaml-parse string-or-port
-              (lambda (enc seed) (cons 'stream-start seed))
-              (lambda (seed) seed)
-              (lambda (version tags seed)
-                      (cons 'document-start seed))
-              (lambda (implicit? seed) (car seed))
-              (lambda (alias seed) seed)
-              parser-scalar
-              (lambda (anchor tag implicit style seed)
-                      (cons 'sequence-start seed))
-              parser-sequence-end
-              (lambda (anchor tag implicit style seed)
-                      (cons 'mapping-start seed))
-              parser-mapping-end
-              '()))
+  (let ((anchors (make-hash-table)))
+    (yaml-parse string-or-port
+                (lambda (enc seed) (cons 'stream-start seed))
+                (lambda (seed) seed)
+                (lambda (version tags seed)
+                        (cons 'document-start seed))
+                (lambda (implicit? seed) (car seed))
+                (lambda (alias seed)
+                  (if (hash-table-exists? anchors alias)
+                      (cons (hash-table-ref anchors alias) seed)
+                      seed))
+                parser-scalar
+                (lambda (anchor tag implicit style seed)
+                        (cons (wrap-start-sequence-ctx anchor anchors) seed))
+                parser-sequence-end
+                (lambda (anchor tag implicit style seed)
+                        (cons (wrap-start-mapping-ctx anchor anchors) seed))
+                parser-mapping-end
+                '())))
 
 (define-foreign-type yaml_parser (c-pointer "yaml_parser_t"))
 (define-foreign-type yaml_parser_t (c-pointer "yaml_parser_t"))
