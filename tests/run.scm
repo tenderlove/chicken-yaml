@@ -228,3 +228,6 @@
   (test-roundtrip #t)
   (test-roundtrip #f)
   )
+
+(test-end)
+(test-exit)
