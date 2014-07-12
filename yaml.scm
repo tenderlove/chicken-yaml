@@ -2,7 +2,7 @@
 ;;;; Bindings to libyaml
 
 (module yaml
-  (yaml-parse yaml-load yaml-dump
+  (yaml-parse yaml-parse-events yaml-load yaml-dump
 
    ; event based emitting
    with-yaml-emitter document-start document-end scalar stream-start stream-end
@@ -226,6 +226,25 @@
 
 ;;;; Parser
 
+(define (yaml-parse-events yaml)
+  (reverse (yaml-parse yaml
+              (lambda (enc seed) (cons (list 'stream-start enc) seed))
+              (lambda (seed) (cons (list 'stream-end) seed))
+              (lambda (version tags implicit seed)
+                      (cons (list 'document-start version tags implicit) seed))
+              (lambda (implicit? seed)
+                      (cons (list 'document-end implicit?) seed))
+              (lambda (alias seed) (cons (list 'alias alias) seed))
+              (lambda (value anchor tag plain quoted style seed)
+                      (cons (list 'scalar value anchor tag plain quoted style) seed))
+              (lambda (anchor tag implicit style seed)
+                      (cons (list 'sequence-start anchor tag implicit style) seed))
+              (lambda (seed) (cons (list 'sequence-end) seed))
+              (lambda (anchor tag implicit style seed)
+                      (cons (list 'mapping-start anchor tag implicit style) seed))
+              (lambda (seed) (cons (list 'mapping-end) seed))
+              '())))
+
 (define (parser-sequence-end seed)
   (let loop ((the-list '()) (stack seed))
     (if (start-sequence-ctx? (car stack))
@@ -289,7 +308,7 @@
     (yaml-parse string-or-port
                 (lambda (enc seed) (cons 'stream-start seed))
                 (lambda (seed) seed)
-                (lambda (version tags seed)
+                (lambda (version tags implicit seed)
                         (cons 'document-start seed))
                 (lambda (implicit? seed) (car seed))
                 (lambda (alias seed)
@@ -413,6 +432,7 @@
   (let ((cb (get-document-start ctx)))
     (cb (document-version-directives event)
         (tag-directives event)
+        (document-start-implicit event)
         seed)))
 
 (define (handle-document-end-event ctx event seed)
@@ -690,6 +710,13 @@
 (define event.data.document_start.version_directive (foreign-lambda* c-pointer
   ((yaml_event_t event))
   "C_return(event->data.document_start.version_directive);"))
+
+(define event.data.document_start.implicit (foreign-lambda* int
+  ((yaml_event_t event))
+  "C_return(event->data.document_start.implicit);"))
+
+(define (document-start-implicit event)
+  (= 1 (event.data.document_start.implicit event)))
 
 (define event.data.document_start.version_directive->major (foreign-lambda* int
   ((yaml_event_t event))
