@@ -313,8 +313,6 @@
 (define-foreign-type yaml_tag_directive_t (c-pointer "yaml_tag_directive_t"))
 (define sizeof_tag_directive_t (foreign-type-size "yaml_tag_directive_t"))
 
-(define (add-tag pair tags) (append tags (list pair)))
-
 (define-record-type parser-context
                     (wrap-parser context
                                  stream-start
