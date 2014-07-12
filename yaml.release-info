@@ -4,5 +4,6 @@
 (uri targz "https://github.com/tenderlove/chicken-{egg-name}/tarball/v{egg-release}")
 (release "0.1.0")
 (release "0.1.1")
+(release "0.1.2")
 
 ; vim: syntax=scheme
