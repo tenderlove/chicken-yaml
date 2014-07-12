@@ -216,11 +216,11 @@
       (abort "not yet")))
 
 (define (populate-version version)
-  (if (and (pair? version) (not (list? version)))
+  (if (= 2 (length version))
     (let ((version-directive (make-yaml-version-directive)))
       (begin
         (set-version-directive.major version-directive (car version))
-        (set-version-directive.minor version-directive (cdr version))
+        (set-version-directive.minor version-directive (cadr version))
         version-directive))
     #f))
 

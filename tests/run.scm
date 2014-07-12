@@ -100,6 +100,23 @@
                 (find-event 'mapping-end (yaml-parse-events "{ foo: bar }")))
 )
 
+(define (round-trip-doc doc)
+  (let ((events (yaml-parse-events doc)))
+    (call-with-write-pipe (lambda (port)
+               (with-yaml-emitter port (lambda (emitter)
+                 (for-each (lambda (event)
+                             (let ((fun (eval (car event)))
+                                   (args (cons emitter (cdr event))))
+                               (apply fun args)))
+                           events)))))))
+
+(test-group "event round trip"
+  (let ((doc "--- foo\n...\n"))
+    (test doc (round-trip-doc doc)))
+  (let ((doc "%YAML 1.1\n--- foo\n...\n"))
+    (test doc (round-trip-doc doc))))
+
+
 (test-group "load"
   (test-group "error"
     (test-error (yaml-load "--- ["))
@@ -161,7 +178,7 @@
     (let ((yaml (call-with-write-pipe (lambda (port)
                   (with-yaml-emitter port (lambda (emitter)
                     (stream-start emitter yaml:utf8-encoding)
-                    (document-start emitter (cons 1 1) '() #f)
+                    (document-start emitter (list 1 1) '() #f)
                     (scalar emitter "foo" #f #f #t #f yaml:scalar-style:any)
                     (document-end emitter #t)
                     (stream-end emitter)))))))
@@ -169,7 +186,7 @@
     (let ((yaml (call-with-write-pipe (lambda (port)
                   (with-yaml-emitter port (lambda (emitter)
                     (stream-start emitter yaml:utf8-encoding)
-                    (document-start emitter (cons 1 1) '() #f)
+                    (document-start emitter (list 1 1) '() #f)
                     (sequence-start emitter #f #f #t yaml:sequence-style:any)
                     (scalar emitter "foo" #f #f #t #f yaml:scalar-style:any)
                     (sequence-end emitter)
@@ -179,7 +196,7 @@
     (let ((yaml (call-with-write-pipe (lambda (port)
                   (with-yaml-emitter port (lambda (emitter)
                     (stream-start emitter yaml:utf8-encoding)
-                    (document-start emitter (cons 1 1) '() #f)
+                    (document-start emitter (list 1 1) '() #f)
                     (mapping-start emitter #f #f #t yaml:mapping-style:any)
                     (scalar emitter "foo" #f #f #t #f yaml:scalar-style:any)
                     (scalar emitter "bar" #f #f #t #f yaml:scalar-style:any)
