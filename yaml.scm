@@ -108,13 +108,13 @@
       (if (= 0 (cb event))
         (begin
           (free event)
-          (free-emitter emitter)
+          (free-emitter emitter-ctx)
           (abort "event initialization error"))
         (let ((state (yaml_emitter_emit emitter event)))
           (if (= 0 state)
               (let ((exn (make-emit-exception emitter)))
                 (free event)
-                (free-emitter emitter)
+                (free-emitter emitter-ctx)
                 (abort exn))
               emitter))))))
 
