@@ -274,9 +274,11 @@
           (cons value seed)
           (cons (parse-scalar value) seed))))
 
+(define possible-string (string->irregex "[^0-9.:+-].*"))
+
 (define (parse-scalar value)
   (cond ((string-null? value) (sql-null))
-        ((irregex-match "[^0-9.:-]?[A-Za-z_!@#$%^&*(){}<>|/\\~;=]+" value)
+        ((irregex-match possible-string value)
          (cond ((> (string-length value) 5) value)
                ((irregex-match '(w/nocase (or "yes" "true" "on")) value) #t)
                ((irregex-match '(w/nocase (or "no" "false" "off")) value) #f)
