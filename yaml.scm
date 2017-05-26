@@ -276,6 +276,9 @@
 
 (define (parse-scalar value)
   (cond ((string-null? value) (sql-null))
+        ((irregex-match '(w/nocase (or "yes" "true" "on")) value) #t)
+        ((irregex-match '(w/nocase (or "no" "false" "off")) value) #f)
+        ((irregex-match "[^0-9.:-]?[A-Za-z_!@#$%^&*(){}<>|/\\~;=]+" value) value)
         ((string-index value #\: 0 1)
          (string->symbol (irregex-replace "^:" value)))
         ((irregex-match "[-+]?[0-9][0-9_,]*" value)
@@ -292,8 +295,6 @@
            (if (irregex-search '(seq bos (or "+" "-")) str)
                (string->number str)
                +nan.0)))
-        ((irregex-match '(w/nocase (or "yes" "true" "on")) value) #t)
-        ((irregex-match '(w/nocase (or "no" "false" "off")) value) #f)
         (else value)))
 
 (define-record-type start-mapping-ctx
