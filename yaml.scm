@@ -267,12 +267,15 @@
         result)
         (loop (cons (cons (cadr stack) (car stack)) the-list) (cddr stack)))))
 
-(define (parser-scalar value anchor tag plain quoted style seed)
+(define ((parser-scalar anchors) value anchor tag plain quoted style seed)
+  (define (record+ value)
+    (if anchor (hash-table-set! anchors anchor value))
+    value)
   (if (equal? "!scheme/symbol" tag)
-      (cons (string->symbol (irregex-replace "^:" value)) seed)
+      (cons (record+ (string->symbol (irregex-replace "^:" value))) seed)
       (if quoted
-          (cons value seed)
-          (cons (parse-scalar value) seed))))
+          (cons (record+ value) seed)
+          (cons (record+ (parse-scalar value)) seed))))
 
 (define possible-string (string->irregex "[^0-9.:+-].*"))
 
@@ -324,7 +327,7 @@
                 (lambda (implicit? seed) (car seed))
                 (lambda (alias seed)
 		  (cons (hash-table-ref anchors alias) seed))
-                parser-scalar
+                (parser-scalar anchors)
                 (lambda (anchor tag implicit style seed)
                         (cons (wrap-start-sequence-ctx anchor anchors) seed))
                 parser-sequence-end
