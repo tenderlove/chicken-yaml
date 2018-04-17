@@ -323,9 +323,7 @@
                         (cons 'document-start seed))
                 (lambda (implicit? seed) (car seed))
                 (lambda (alias seed)
-                  (if (hash-table-exists? anchors alias)
-                      (cons (hash-table-ref anchors alias) seed)
-                      seed))
+		  (cons (hash-table-ref anchors alias) seed))
                 parser-scalar
                 (lambda (anchor tag implicit style seed)
                         (cons (wrap-start-sequence-ctx anchor anchors) seed))
