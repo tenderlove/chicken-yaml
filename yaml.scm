@@ -16,8 +16,24 @@
    yaml:scalar-style:folded
   )
 
-(import scheme chicken foreign irregex)
-(use irregex srfi-13 srfi-69 lolevel sql-null posix utils)
+(import scheme)
+
+(cond-expand
+ (chicken-4
+  (import scheme chicken foreign irregex)
+  (use irregex srfi-13 srfi-69 lolevel sql-null posix utils (only extras read-string)))
+ (else
+  (import
+   (chicken base)
+   (chicken type)
+   (chicken foreign)
+   (chicken memory)
+   srfi-12
+   (only (chicken io) read-string)
+   (only (chicken file posix) open-output-file* open-input-file*)
+   (only (chicken process) create-pipe)
+   )
+  (import srfi-13 srfi-69 sql-null (chicken irregex))))
 
 (foreign-declare "#include <yaml.h>")
 
@@ -31,7 +47,7 @@
               (output (open-output-file* out-fd)))
           (yaml-dump-port object output)
           (close-output-port output)
-          (let ((result (read-all input)))
+          (let ((result (read-string #f input)))
             (close-input-port input)
             result)))))
 
@@ -267,12 +283,15 @@
         result)
         (loop (cons (cons (cadr stack) (car stack)) the-list) (cddr stack)))))
 
-(define (parser-scalar value anchor tag plain quoted style seed)
+(define ((parser-scalar anchors) value anchor tag plain quoted style seed)
+  (define (record+ value)
+    (if anchor (hash-table-set! anchors anchor value))
+    value)
   (if (equal? "!scheme/symbol" tag)
-      (cons (string->symbol (irregex-replace "^:" value)) seed)
+      (cons (record+ (string->symbol (irregex-replace "^:" value))) seed)
       (if quoted
-          (cons value seed)
-          (cons (parse-scalar value) seed))))
+          (cons (record+ value) seed)
+          (cons (record+ (parse-scalar value)) seed))))
 
 (define possible-string (string->irregex "[^0-9.:+-].*"))
 
@@ -323,10 +342,8 @@
                         (cons 'document-start seed))
                 (lambda (implicit? seed) (car seed))
                 (lambda (alias seed)
-                  (if (hash-table-exists? anchors alias)
-                      (cons (hash-table-ref anchors alias) seed)
-                      seed))
-                parser-scalar
+		  (cons (hash-table-ref anchors alias) seed))
+                (parser-scalar anchors)
                 (lambda (anchor tag implicit style seed)
                         (cons (wrap-start-sequence-ctx anchor anchors) seed))
                 parser-sequence-end

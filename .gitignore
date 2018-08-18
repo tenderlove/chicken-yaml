@@ -2,3 +2,8 @@ salmonella.log
 yaml.import.scm
 yaml.import.so
 yaml.so
+*~
+*.build.sh
+*.install.sh
+*.link
+*.types
