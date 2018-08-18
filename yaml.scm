@@ -16,8 +16,24 @@
    yaml:scalar-style:folded
   )
 
-(import scheme chicken foreign irregex)
-(use irregex srfi-13 srfi-69 lolevel sql-null posix utils)
+(import scheme)
+
+(cond-expand
+ (chicken-4
+  (import scheme chicken foreign irregex)
+  (use irregex srfi-13 srfi-69 lolevel sql-null posix utils (only extras read-string)))
+ (else
+  (import
+   (chicken base)
+   (chicken type)
+   (chicken foreign)
+   (chicken memory)
+   srfi-12
+   (only (chicken io) read-string)
+   (only (chicken file posix) open-output-file* open-input-file*)
+   (only (chicken process) create-pipe)
+   )
+  (import srfi-13 srfi-69 sql-null (chicken irregex))))
 
 (foreign-declare "#include <yaml.h>")
 
@@ -31,7 +47,7 @@
               (output (open-output-file* out-fd)))
           (yaml-dump-port object output)
           (close-output-port output)
-          (let ((result (read-all input)))
+          (let ((result (read-string #f input)))
             (close-input-port input)
             result)))))
 

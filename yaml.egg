@@ -1,0 +1,14 @@
+;;; yaml.meta -*- Hen -*-
+
+((synopsis "Bindings to libyaml")
+ (author "Aaron Patterson")
+ (license "MIT")
+ (version "0.2.0")
+ (category net)
+ (test-dependencies test)
+ (dependencies sql-null irregex srfi-13 srfi-69)
+ (components
+  (extension
+   yaml
+   (types-file)
+   (link-options "-L" "-lyaml"))))
