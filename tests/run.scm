@@ -1,4 +1,11 @@
-(use yaml test srfi-1 sql-null posix)
+(import yaml test srfi-1 sql-null)
+(import (chicken file posix))
+(import (chicken process))
+(import (chicken io))
+(import (chicken condition))
+(import (chicken port))
+
+(define read-all read-string)
 
 (test-begin "yaml")
 
@@ -18,7 +25,7 @@
                    (cb output)
                    (close-output-port output)
                    (let* ((input (open-input-file* in-fd))
-                          (str (read-all input)))
+                          (str (read-string #f input)))
                      (close-input-port input)
                      str))))
 
