@@ -103,7 +103,8 @@
 (define-record-type emitter-context
                     (wrap-emitter context port)
                     emitter-context?
-                    (context get-emitter))
+                    (context get-emitter)
+                    (port get-emitter-port))
 
 (define (with-yaml-emitter port cb)
   (let ((emitter (make-yaml-emitter port)))
