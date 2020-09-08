@@ -5,7 +5,7 @@
  (license "MIT")
  (version "0.2.0")
  (category net)
- (test-dependencies test)
+ (test-dependencies test srfi-1)
  (dependencies sql-null srfi-13 srfi-69)
  (components
   (extension
