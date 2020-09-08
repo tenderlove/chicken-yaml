@@ -1,11 +1,14 @@
-(import yaml test srfi-1 sql-null)
-(import (chicken file posix))
-(import (chicken process))
-(import (chicken io))
-(import (chicken condition))
-(import (chicken port))
-
-(define read-all read-string)
+(import scheme)
+(cond-expand
+ (chicken-4
+  (use yaml test srfi-1 sql-null posix))
+ (chicken-5
+  (import yaml test srfi-1 sql-null)
+  (import (chicken file posix))
+  (import (chicken process))
+  (import (chicken io))
+  (import (chicken condition))
+  (import (chicken port))))
 
 (test-begin "yaml")
 
