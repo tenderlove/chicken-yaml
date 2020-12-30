@@ -16,7 +16,7 @@ structure to yaml.
 ### Strings, Symbols, Null
 
 ```scheme
-#;1> (use yaml)
+#;1> (import yaml)
 #;2> (yaml-load "--- foo")
 "foo"
 #;3> (yaml-load "--- :bar")
@@ -28,7 +28,7 @@ bar
 ### Lists
 
 ```scheme
-#;1> (use yaml)
+#;1> (import yaml)
 #;2> (yaml-load "--- ['foo', ['bar']]")
 ("foo" ("bar"))
 ```
@@ -36,7 +36,7 @@ bar
 ### Hashes
 
 ```scheme
-#;1> (use yaml)
+#;1> (import yaml)
 #;2> (yaml-load "--- {foo: bar}")
 (("foo" . "bar"))
 #;3> (yaml-load "--- {foo: bar, bar: baz}")
@@ -89,7 +89,7 @@ You can use the seed to gather a list of events like so:
 You can dump whole structures to a string like this:
 
 ```scheme
-#;1> (use yaml)
+#;1> (import yaml)
 #;2> (print (yaml-dump (list "foo" "bar" (list (cons "baz" "omg")))))
 ---
 - foo
@@ -104,7 +104,7 @@ You can dump whole structures to a string like this:
 Or you can dump structures to a port:
 
 ```scheme
-#;1> (use yaml)
+#;1> (import yaml)
 #;2> (yaml-dump (list "foo" "bar" (list (cons "baz" "omg"))) (current-output-port))
 ---
 - foo
