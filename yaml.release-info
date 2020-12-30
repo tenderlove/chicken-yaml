@@ -2,6 +2,7 @@
 
 (repo git "git://github.com/tenderlove/chicken-{egg-name}.git")
 (uri targz "https://github.com/tenderlove/chicken-{egg-name}/tarball/v{egg-release}")
+(release "0.2.2")
 (release "0.2.1")
 (release "0.2.0")
 (release "0.1.0")
