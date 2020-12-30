@@ -121,13 +121,13 @@
                            events)))))))
 
 (test-group "event round trip"
-  (let ((doc "--- &1\n- *1\n"))
-    (test doc (round-trip-doc doc)))
   (let ((doc "--- foo\n...\n"))
     (test doc (round-trip-doc doc)))
   (let ((doc "--- [foo]\n...\n"))
     (test doc (round-trip-doc doc)))
   (let ((doc "--- {a: b}\n...\n"))
+    (test doc (round-trip-doc doc)))
+  (let ((doc "--- &hello\n- *hello\n"))
     (test doc (round-trip-doc doc)))
   (let ((doc "%YAML 1.1\n--- foo\n...\n"))
     (test doc (round-trip-doc doc))))
