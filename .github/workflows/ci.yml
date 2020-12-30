@@ -1,0 +1,16 @@
+name: MacOS Tests
+on: [push, pull_request]
+jobs:
+  tests:
+    runs-on: macos-latest
+    steps:
+      - name: Install Chicken
+        run: |
+          brew install chicken
+      - uses: actions/checkout@v2
+        with:
+          path: src
+      - name: Run Tests
+        run: |
+          chicken-install -test
+        working-directory: src
