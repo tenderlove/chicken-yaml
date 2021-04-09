@@ -11,4 +11,4 @@
   (extension
    yaml
    (types-file)
-   (link-options "-L" "-lyaml"))))
+   (custom-build "build-yaml"))))

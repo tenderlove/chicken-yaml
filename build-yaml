@@ -1,0 +1,2 @@
+#!/bin/sh
+"$CHICKEN_CSI" -s build-yaml.scm "$@"
