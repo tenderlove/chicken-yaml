@@ -11,4 +11,5 @@
   (extension
    yaml
    (types-file)
+   (csc-options "-C" "-I/usr/local/include")
    (link-options "-L" "-lyaml"))))
