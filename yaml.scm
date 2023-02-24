@@ -90,6 +90,11 @@
          (if object
              (scalar emitter "true" #f #f #t #f yaml:scalar-style:any)
              (scalar emitter "false" #f #f #t #f yaml:scalar-style:any)))
+				((pair? object)
+				 (mapping-start emitter #f #f #t yaml:sequence-style:any)
+         (walk-objects (car object) emitter)
+         (walk-objects (cdr object) emitter)
+         (mapping-end emitter))
         (else (abort "unknown"))))
 
 (define (yaml-dump-port object port)
