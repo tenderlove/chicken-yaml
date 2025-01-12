@@ -171,14 +171,14 @@
 
   (test-group "list"
     (let* ((l '())
-           (lst (list l l)))
+           (lst (vector l l)))
       (test lst (yaml-load "---\n- &1 []\n- *1\n")))
-    (test (list "foo" "bar") (yaml-load "--- ['foo', 'bar']"))
-    (test (list "foo" (list "bar")) (yaml-load "--- ['foo', ['bar']]")))
+    (test (vector "foo" "bar") (yaml-load "--- ['foo', 'bar']"))
+    (test (vector "foo" (vector "bar")) (yaml-load "--- ['foo', ['bar']]")))
 
   (test-group "hash"
     (let* ((h (list (cons "a" "b")))
-           (lst (list h h)))
+           (lst (vector h h)))
       (test lst (yaml-load "---\n- &1 {a: b}\n- *1\n")))
     (test '(("x" . "a") ("y" . "a"))
 	  (yaml-load "---\nx: &key a\ny: *key\n"))
@@ -187,7 +187,7 @@
           (yaml-load "--- {'foo':{'bar':'baz'}}")))
 
   (test-group "port"
-    (test (list "foo") (call-with-read-pipe "--- [foo]" yaml-load))))
+    (test (vector "foo") (call-with-read-pipe "--- [foo]" yaml-load))))
 
 (define (test-roundtrip object)
   (test object (yaml-load (yaml-dump object))))
@@ -211,7 +211,7 @@
                     (sequence-end emitter)
                     (document-end emitter #t)
                     (stream-end emitter)))))))
-      (test (list "foo") (yaml-load yaml)))
+      (test (vector "foo") (yaml-load yaml)))
     (let ((yaml (call-with-write-pipe (lambda (port)
                   (with-yaml-emitter port (lambda (emitter)
                     (stream-start emitter yaml:utf8-encoding)
@@ -226,13 +226,13 @@
 
   (test-roundtrip "foo")
   (test-roundtrip "1.2")
-  (test-roundtrip (list "1.2" "foo"))
+  (test-roundtrip (vector "1.2" "foo"))
   (test-roundtrip '())
   (test-roundtrip (list (cons "foo" "bar") (cons "baz" "omg")))
-  (test-roundtrip (list (list "foo") "o" "m"))
+  (test-roundtrip (list->vector (list (list->vector (list "foo")) "o" "m")))
   (test-roundtrip (sql-null))
-  (test-roundtrip (list 'foo))
-  (test-roundtrip (list (string->symbol "")))
+  (test-roundtrip (vector 'foo))
+  (test-roundtrip (vector (string->symbol "")))
   (test-roundtrip (string->symbol ""))
   (test-roundtrip 1.2)
   (test-roundtrip 12)
