@@ -75,7 +75,8 @@
                (mapping-end emitter))
              (begin
                (sequence-start emitter #f #f #t yaml:sequence-style:any)
-               (for-each (lambda (obj) (walk-objects obj emitter)) (vector->list object))
+               (for-each (lambda (obj) (walk-objects obj emitter)) (if (null? object) object (vector->list object)))
+               ;FIXME: Both [] and {} will be load as '(), and here always treat it as list but not map
                (sequence-end emitter))))
         ((sql-null? object)
          (scalar emitter "" #f "tag:yaml.org,2002:null" #t #f yaml:scalar-style:any))
@@ -339,6 +340,7 @@
                     (anchors get-sequence-anchors))
 
 ; Load YAML from a string or port
+;FIXME: Both [] and {} will be load as '()
 (define (yaml-load string-or-port)
   (let ((anchors (make-hash-table)))
     (yaml-parse string-or-port
