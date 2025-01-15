@@ -63,10 +63,10 @@
 
 (define (walk-objects object emitter)
   (cond ((string? object) (emit-string emitter object))
-        ((list? object)
+        ((or (vector? object) (list? object))
          (if (and (not (null? object))
-                  (pair? (car object))
-                  (not (list? (car object))))
+                  (not (vector? object))
+                  (pair? (car object)))
              (begin
                (mapping-start emitter #f #f #t yaml:sequence-style:any)
                (for-each (lambda (pair)
@@ -75,7 +75,8 @@
                (mapping-end emitter))
              (begin
                (sequence-start emitter #f #f #t yaml:sequence-style:any)
-               (for-each (lambda (obj) (walk-objects obj emitter)) object)
+               (for-each (lambda (obj) (walk-objects obj emitter)) (if (null? object) object (vector->list object)))
+               ;FIXME: Both [] and {} will be load as '(), and here always treat it as list but not map
                (sequence-end emitter))))
         ((sql-null? object)
          (scalar emitter "" #f "tag:yaml.org,2002:null" #t #f yaml:scalar-style:any))
@@ -276,7 +277,7 @@
              (result (cons the-list (cdr stack))))
         (if anchor (hash-table-set! anchors anchor the-list))
         result)
-      (loop (cons (car stack) the-list) (cdr stack)))))
+      (loop (list->vector (cons (car stack) ((lambda (the-list) (if (vector? the-list) (vector->list the-list) the-list)) the-list))) (cdr stack)))))
 
 (define (parser-mapping-end seed)
   (let loop ((the-list '()) (stack seed))
@@ -339,6 +340,7 @@
                     (anchors get-sequence-anchors))
 
 ; Load YAML from a string or port
+;FIXME: Both [] and {} will be load as '()
 (define (yaml-load string-or-port)
   (let ((anchors (make-hash-table)))
     (yaml-parse string-or-port
